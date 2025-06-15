@@ -263,196 +263,306 @@ export default function RelatoriosPage() {
   }));
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Relatórios</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Analise seus dados financeiros e tome decisões informadas
+    <div className="min-h-screen w-full bg-background">
+      <div className="w-full max-w-full overflow-x-hidden">
+        {/* Mobile Header */}
+        <div className="md:hidden bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <Terminal className="h-5 w-5" />
+              <h1 className="text-lg font-bold">Relatórios</h1>
+            </div>
+          </div>
+          <p className="text-sm opacity-90">
+            Análise detalhada das suas finanças
           </p>
         </div>
-        <div className="flex flex-col md:flex-row gap-2">
-          <Select value={filters.period} onValueChange={handlePeriodChange}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Selecione o período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="mes">Este Mês</SelectItem>
-              <SelectItem value="trimestre">Último Trimestre</SelectItem>
-              <SelectItem value="semestre">Último Semestre</SelectItem>
-              <SelectItem value="ano">Este Ano</SelectItem>
-            </SelectContent>
-          </Select>
 
-          <Button variant="outline" className="w-full md:w-auto" onClick={() => {}}>
-            <Download className="mr-2 h-4 w-4" /> Exportar Dados
-          </Button>
-        </div>
-      </div>
-
-      {/* Tabs de Navegação */}
-      <div className="flex flex-col space-y-4">
-        <div className="flex flex-wrap gap-2 bg-muted p-1 rounded-lg w-full md:w-fit">
-          <button
-            onClick={() => setActiveTab('tendencias')}
-            className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'tendencias' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Tendências Anuais
-          </button>
-          <button
-            onClick={() => setActiveTab('categorias')}
-            className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'categorias' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Despesas por Categoria
-          </button>
+        {/* Desktop Header */}
+        <div className="hidden md:block p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <Terminal className="h-6 w-6" />
+                Relatórios Financeiros
+              </h1>
+              <p className="text-muted-foreground">
+                Análise detalhada das suas movimentações financeiras.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Conteúdo das Tabs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="col-span-1 md:col-span-2 lg:col-span-3">
-            <CardHeader>
-              <CardTitle className="text-lg md:text-xl">Visão Geral</CardTitle>
-              <CardDescription>Resumo das suas finanças no período selecionado</CardDescription>
+        <div className="p-3 sm:p-4 space-y-4 max-w-full overflow-x-hidden pb-4">
+          {/* Filtros - Mobile optimized */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Filtros</CardTitle>
+              <CardDescription className="hidden md:block">
+                Personalize a análise dos seus dados financeiros
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Receitas</p>
-                  <p className="text-xl md:text-2xl font-bold text-green-600">
-                    {formatCurrency(reportData?.totalIncome || 0)}
-                  </p>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="period">Período</Label>
+                  <Select value={filters.period} onValueChange={handlePeriodChange}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Selecione o período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="this-month">Este Mês</SelectItem>
+                      <SelectItem value="last-month">Mês Passado</SelectItem>
+                      <SelectItem value="this-year">Este Ano</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Despesas</p>
-                  <p className="text-xl md:text-2xl font-bold text-red-600">
-                    {formatCurrency(reportData?.totalExpenses || 0)}
-                  </p>
+
+                {filters.period === 'custom' && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Intervalo Personalizado</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal h-10",
+                            !filters.dateRange.from && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {filters.dateRange.from && filters.dateRange.to ? (
+                            <>
+                              {format(filters.dateRange.from, "dd/MM/yyyy")} - {format(filters.dateRange.to, "dd/MM/yyyy")}
+                            </>
+                          ) : (
+                            <span>Escolha um intervalo</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          selected={{ from: filters.dateRange.from, to: filters.dateRange.to }}
+                          onSelect={(range) => {
+                            if (range?.from && range?.to) {
+                              setFilters(prev => ({ ...prev, dateRange: { from: range.from!, to: range.to! } }));
+                            }
+                          }}
+                          numberOfMonths={1}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select value={filters.type} onValueChange={(value: "all" | "receita" | "despesa") => setFilters(prev => ({ ...prev, type: value }))}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Tipo de transação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="receita">Receitas</SelectItem>
+                      <SelectItem value="despesa">Despesas</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Saldo</p>
-                  <p className="text-xl md:text-2xl font-bold">
-                    {formatCurrency(reportData?.balance || 0)}
-                  </p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Categoria</Label>
+                  <Select value={filters.category} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {availableCategories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Economia</p>
-                  <p className="text-xl md:text-2xl font-bold">
-                    {reportData?.totalIncome > 0 
-                      ? `${Math.round((reportData.balance / reportData.totalIncome) * 100)}%`
-                      : '0%'
-                    }
-                  </p>
-                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={fetchReportData} className="w-full sm:w-auto">
+                  Atualizar Relatório
+                </Button>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar PDF
+                </Button>
               </div>
             </CardContent>
           </Card>
 
-          {activeTab === 'tendencias' ? (
-            <>
-              <Card className="col-span-1 md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Fluxo de Caixa</CardTitle>
-                  <CardDescription>Evolução de receitas e despesas</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px] md:h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={reportData?.incomeVsExpenses || []}>
-                      <CartesianGrid vertical={false} />
-                      <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                      <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
-                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} formatter={(value) => formatCurrency(value as number)} />
-                      <Legend />
-                      <Bar dataKey="Receitas" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Despesas" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+          {/* Tabs de Navegação */}
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-wrap gap-2 bg-muted p-1 rounded-lg w-full md:w-fit">
+              <button
+                onClick={() => setActiveTab('tendencias')}
+                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'tendencias' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Tendências Anuais
+              </button>
+              <button
+                onClick={() => setActiveTab('categorias')}
+                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'categorias' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Despesas por Categoria
+              </button>
+            </div>
 
-              <Card>
+            {/* Conteúdo das Tabs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card className="col-span-1 md:col-span-2 lg:col-span-3">
                 <CardHeader>
-                  <CardTitle>Distribuição</CardTitle>
-                  <CardDescription>Proporção entre receitas e despesas</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={reportData?.expensesByCategory || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
-                        {reportData.expensesByCategory.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(value as number)} contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </>
-          ) : (
-            <>
-              <Card className="col-span-1 md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Despesas por Categoria</CardTitle>
-                  <CardDescription>Distribuição dos seus gastos</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px] md:h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={reportData?.expensesByCategory || []}>
-                      <CartesianGrid vertical={false} />
-                      <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                      <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
-                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} formatter={(value) => formatCurrency(value as number)} />
-                      <Legend />
-                      <Bar dataKey="value" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Top Categorias</CardTitle>
-                  <CardDescription>Maiores gastos por categoria</CardDescription>
+                  <CardTitle className="text-lg md:text-xl">Visão Geral</CardTitle>
+                  <CardDescription>Resumo das suas finanças no período selecionado</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {reportData.expensesByCategory.length > 0 ? (
-                      reportData.expensesByCategory
-                        .sort((a, b) => b.value - a.value)
-                        .slice(0, 5) // Mostra apenas as 5 maiores
-                        .map((categoria, index) => {
-                          const totalExpenses = reportData.totalExpenses || 1; // Garante que não é zero
-                          const percentage = (categoria.value / totalExpenses) * 100;
-                          
-                          return (
-                            <div key={index} className="space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">{categoria.name}</span>
-                                <span>{formatCurrency(categoria.value)}</span>
-                              </div>
-                              <Progress value={percentage} className="h-2" />
-                              <p className="text-xs text-muted-foreground text-right">
-                                {Math.round(percentage)}% do total
-                              </p>
-                            </div>
-                          );
-                        })
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhuma despesa registrada no período.
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Receitas</p>
+                      <p className="text-xl md:text-2xl font-bold text-green-600">
+                        {formatCurrency(reportData?.totalIncome || 0)}
                       </p>
-                    )}
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Despesas</p>
+                      <p className="text-xl md:text-2xl font-bold text-red-600">
+                        {formatCurrency(reportData?.totalExpenses || 0)}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Saldo</p>
+                      <p className="text-xl md:text-2xl font-bold">
+                        {formatCurrency(reportData?.balance || 0)}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Economia</p>
+                      <p className="text-xl md:text-2xl font-bold">
+                        {reportData?.totalIncome > 0 
+                          ? `${Math.round((reportData.balance / reportData.totalIncome) * 100)}%`
+                          : '0%'
+                        }
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </>
-          )}
+
+              {activeTab === 'tendencias' ? (
+                <>
+                  <Card className="col-span-1 md:col-span-2">
+                    <CardHeader>
+                      <CardTitle>Fluxo de Caixa</CardTitle>
+                      <CardDescription>Evolução de receitas e despesas</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px] md:h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={reportData?.incomeVsExpenses || []}>
+                          <CartesianGrid vertical={false} />
+                          <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                          <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
+                          <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} formatter={(value) => formatCurrency(value as number)} />
+                          <Legend />
+                          <Bar dataKey="Receitas" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Despesas" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Distribuição</CardTitle>
+                      <CardDescription>Proporção entre receitas e despesas</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={reportData?.expensesByCategory || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
+                            {reportData.expensesByCategory.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => formatCurrency(value as number)} contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                <>
+                  <Card className="col-span-1 md:col-span-2">
+                    <CardHeader>
+                      <CardTitle>Despesas por Categoria</CardTitle>
+                      <CardDescription>Distribuição dos seus gastos</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px] md:h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={reportData?.expensesByCategory || []}>
+                          <CartesianGrid vertical={false} />
+                          <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                          <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
+                          <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} formatter={(value) => formatCurrency(value as number)} />
+                          <Legend />
+                          <Bar dataKey="value" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Top Categorias</CardTitle>
+                      <CardDescription>Maiores gastos por categoria</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {reportData.expensesByCategory.length > 0 ? (
+                          reportData.expensesByCategory
+                            .sort((a, b) => b.value - a.value)
+                            .slice(0, 5) // Mostra apenas as 5 maiores
+                            .map((categoria, index) => {
+                              const totalExpenses = reportData.totalExpenses || 1; // Garante que não é zero
+                              const percentage = (categoria.value / totalExpenses) * 100;
+                              
+                              return (
+                                <div key={index} className="space-y-2">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium">{categoria.name}</span>
+                                    <span>{formatCurrency(categoria.value)}</span>
+                                  </div>
+                                  <Progress value={percentage} className="h-2" />
+                                  <p className="text-xs text-muted-foreground text-right">
+                                    {Math.round(percentage)}% do total
+                                  </p>
+                                </div>
+                              );
+                            })
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhuma despesa registrada no período.
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

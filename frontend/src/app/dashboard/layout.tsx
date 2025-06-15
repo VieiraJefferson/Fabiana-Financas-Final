@@ -30,6 +30,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FabiTutorial } from "@/components/fabi-character";
 import { FabiAssistant } from "@/components/fabi-assistant";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { useFabiTutorial } from "@/hooks/use-fabi-tutorial";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { 
@@ -72,9 +73,8 @@ const NavigationLinks = ({ onClick = () => {}, restartTutorial, pathname, sessio
 
   const handleNavigation = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
-    router.push(href).then(() => {
-      onClick();
-    });
+    router.push(href);
+    onClick(); // Call onClick immediately instead of waiting for promise
   };
 
   return (
@@ -237,7 +237,11 @@ export default function DashboardLayout({
           <div className="flex h-full flex-col">
             {/* Logo */}
             <div className="flex h-16 items-center justify-center border-b px-4">
-              <h1 className="text-xl font-bold text-primary">Fabi Finanças</h1>
+              <img 
+                src="/logo3.png" 
+                alt="Fabi Finanças" 
+                className="h-24 w-auto"
+              />
             </div>
 
             {/* Navigation */}
@@ -272,7 +276,13 @@ export default function DashboardLayout({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetContent side="left" className="w-[85%] max-w-[300px] sm:max-w-[350px] p-0">
             <SheetHeader className="p-4 border-b">
-              <SheetTitle className="text-xl font-bold text-primary">Fabi Finanças</SheetTitle>
+              <div className="flex justify-center">
+                <img 
+                  src="/logo3.png" 
+                  alt="Fabi Finanças" 
+                  className="h-10 w-auto"
+                />
+              </div>
             </SheetHeader>
             <div className="flex flex-col h-full">
               {/* Navigation */}
@@ -370,12 +380,14 @@ export default function DashboardLayout({
           </header>
           
           {/* Page Content */}
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background pb-16 md:pb-0">
             {children}
           </main>
           
-          {/* Footer */}
-          <Footer />
+          {/* Footer - Hidden on mobile due to bottom nav */}
+          <div className="hidden md:block">
+            <Footer />
+          </div>
         </div>
 
         {/* Fabi Tutorial */}
@@ -397,7 +409,15 @@ export default function DashboardLayout({
             pathname.includes('/conteudo') ? 'content' :
             'dashboard'
           }
+          className={
+            pathname.includes('/transacoes') ? 'bottom-24 md:bottom-6 right-3 md:right-6' :
+            pathname.includes('/dashboard') && !pathname.includes('/transacoes') ? 'bottom-24 md:bottom-6 right-3 md:right-6' :
+            'bottom-24 md:bottom-6 right-3 md:right-6'
+          }
         />
+
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav />
       </div>
     </ToastProvider>
   );

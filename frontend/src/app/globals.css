@@ -143,59 +143,58 @@
 
 @layer base {
   :root {
-    /* Tema Claro */
-    --background: 224 225 221; /* #e0e1dd - Cinza claro */
-    --foreground: 13 27 42; /* #0d1b2a - Azul escuro para texto */
-    --card: 255 255 255; /* Branco para cards */
-    --card-foreground: 13 27 42;
-    --popover: 255 255 255;
-    --popover-foreground: 13 27 42;
-    --primary: 65 90 119; /* #415a77 - Azul médio */
-    --primary-foreground: 224 225 221;
-    --secondary: 119 141 169; /* #778da9 - Azul acinzentado */
-    --secondary-foreground: 13 27 42;
-    --muted: 239 242 245;
-    --muted-foreground: 65 90 119;
-    --accent: 119 141 169;
-    --accent-foreground: 13 27 42;
-    --destructive: 220 53 69; /* Vermelho feedback */
-    --destructive-foreground: 255 255 255;
-    --border: 119 141 169;
-    --input: 255 255 255;
-    --ring: 65 90 119;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
-    
-    /* Cores de feedback */
-    --success: 40 167 69; /* Verde #28A745 */
-    --warning: 255 193 7; /* Amarelo #FFC107 */
-    --danger: 220 53 69; /* Vermelho #DC3545 */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
   .dark {
-    --background: 13 27 42; /* #0d1b2a - Azul marinho muito escuro */
-    --foreground: 224 225 221; /* #e0e1dd - Cinza claro para texto */
-    --card: 27 38 59; /* #1b263b - Azul escuro para cards */
-    --card-foreground: 224 225 221;
-    --popover: 27 38 59;
-    --popover-foreground: 224 225 221;
-    --primary: 65 90 119; /* #415a77 - Azul médio */
-    --primary-foreground: 224 225 221;
-    --secondary: 119 141 169; /* #778da9 - Azul acinzentado */
-    --secondary-foreground: 13 27 42;
-    --muted: 27 38 59; /* #1b263b - Para elementos muted */
-    --muted-foreground: 119 141 169; /* #778da9 - Texto muted */
-    --accent: 65 90 119;
-    --accent-foreground: 224 225 221;
-    --destructive: 239 68 68;
-    --destructive-foreground: 224 225 221;
-    --border: 65 90 119; /* #415a77 - Bordas */
-    --input: 27 38 59; /* #1b263b - Inputs */
-    --ring: 119 141 169;
-    
-    /* Cores de feedback para dark mode */
-    --success: 34 197 94;
-    --warning: 251 191 36;
-    --danger: 239 68 68;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -321,6 +320,50 @@
       @apply h-12 text-base;
     }
   }
+
+  /* Custom styles for mobile bottom navigation */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .h-safe-area-inset-bottom {
+    height: env(safe-area-inset-bottom);
+  }
+  
+  /* Smooth transitions for mobile navigation */
+  .mobile-nav-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Custom backdrop blur for better performance */
+  .backdrop-blur-custom {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  .prevent-horizontal-scroll {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  /* Custom scrollbar for better mobile experience */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 2px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
 }
 
 /* Fabi Character Animations & Speech Bubble */
@@ -404,4 +447,71 @@
 
 .fabi-character-container:hover .fabi-character-image {
   transform: scale(1.05);
+}
+
+/* Prevent horizontal overflow globally */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Ensure all containers respect viewport width */
+* {
+  box-sizing: border-box;
+}
+
+/* Enhanced mobile overflow prevention */
+@media (max-width: 768px) {
+  body, html {
+    overflow-x: hidden !important;
+  }
+  
+  /* Prevent any element from exceeding viewport width */
+  * {
+    max-width: 100vw !important;
+  }
+  
+  /* Fix for containers that might overflow */
+  .container, main, section, div {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure text doesn't cause overflow */
+  h1, h2, h3, h4, h5, h6 {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Fix for flex containers */
+  .flex {
+    min-width: 0;
+  }
+  
+  /* Fix for grid containers */
+  .grid {
+    min-width: 0;
+  }
+}
+
+.truncate-mobile {
+  @apply truncate;
+}
+
+@media (max-width: 640px) {
+  .truncate-mobile {
+    @apply truncate;
+  }
+  
+  /* Ensure no element exceeds viewport width */
+  * {
+    max-width: 100vw;
+  }
+  
+  /* Fix for long text content */
+  h1, h2, h3, h4, h5, h6, p, span, div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
 }

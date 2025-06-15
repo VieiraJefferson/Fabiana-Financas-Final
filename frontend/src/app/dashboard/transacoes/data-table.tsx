@@ -108,17 +108,17 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex flex-col md:flex-row gap-4 p-4">
+      <div className="flex flex-col gap-4 p-3 sm:p-4">
         {/* Barra de Pesquisa */}
-        <div className="flex-1 flex items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <Input
             placeholder="Filtrar transações..."
             value={(table.getColumn("description")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               table.getColumn("description")?.setFilterValue(event.target.value)
             }
-            className="max-w-sm"
+            className="flex-1 h-10"
           />
         </div>
 
@@ -127,7 +127,7 @@ export function DataTable<TData, TValue>({
           {/* Seletor de Colunas Visíveis */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="ml-auto h-8">
+              <Button variant="outline" size="sm" className="h-10 w-full sm:w-auto">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 Colunas
               </Button>
@@ -160,7 +160,7 @@ export function DataTable<TData, TValue>({
             value={rowsPerPage.toString()}
             onValueChange={(value) => setRowsPerPage(Number(value))}
           >
-            <SelectTrigger className="h-8 w-[110px]">
+            <SelectTrigger className="h-10 w-full sm:w-[110px]">
               <SelectValue placeholder="10 linhas" />
             </SelectTrigger>
             <SelectContent>
@@ -174,7 +174,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Tabela */}
-      <div className="rounded-md border">
+      <div className="rounded-md border mx-3 sm:mx-4">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -182,7 +182,7 @@ export function DataTable<TData, TValue>({
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id} className="whitespace-nowrap">
+                      <TableHead key={header.id} className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-4">
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -204,7 +204,7 @@ export function DataTable<TData, TValue>({
                     className="cursor-pointer hover:bg-muted/50"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-2 md:py-4">
+                      <TableCell key={cell.id} className="py-3 px-2 sm:px-4 text-xs sm:text-sm">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
@@ -214,7 +214,7 @@ export function DataTable<TData, TValue>({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-24 text-center text-sm"
                   >
                     Nenhuma transação encontrada.
                   </TableCell>
@@ -226,11 +226,11 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Paginação */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col gap-4 p-3 sm:p-4">
+        <div className="text-sm text-muted-foreground text-center sm:text-left">
           {table.getFilteredRowModel().rows.length} transação(ões) encontrada(s).
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium">Página</p>
             <span className="text-sm font-medium">
@@ -238,13 +238,13 @@ export function DataTable<TData, TValue>({
               {table.getPageCount()}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="h-8 w-24"
+              className="h-10 flex-1 sm:flex-none sm:w-24"
             >
               Anterior
             </Button>
@@ -253,7 +253,7 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="h-8 w-24"
+              className="h-10 flex-1 sm:flex-none sm:w-24"
             >
               Próximo
             </Button>

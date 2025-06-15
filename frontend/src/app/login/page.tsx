@@ -75,7 +75,11 @@ export default function LoginPage() {
               
               {/* App Name */}
               <div className="text-left">
-                <h1 className="text-3xl font-bold text-primary">Fabi Finanças</h1>
+                <img 
+                  src="/logo3.png" 
+                  alt="Fabi Finanças" 
+                  className="h-32 w-auto"
+                />
                 <p className="text-muted-foreground text-sm">Sua mentora financeira</p>
               </div>
             </div>

@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ArrowUpCircle, ArrowDownCircle, Save, Loader2, Calendar as CalendarIcon, Info } from "lucide-react";
+import { ArrowLeft, ArrowUpCircle, ArrowDownCircle, Save, Loader2, Calendar as CalendarIcon, Info, PlusCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -173,239 +173,276 @@ export default function NovaTransacaoPage() {
     : [];
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1 md:space-y-2">
+    <div className="min-h-screen w-full bg-background">
+      <div className="w-full max-w-full overflow-x-hidden">
+        {/* Mobile Header */}
+        <div className="md:hidden bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="text-primary-foreground hover:bg-white/10 p-1 h-auto"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div className="flex items-center gap-2">
+              <PlusCircle className="h-5 w-5" />
+              <h1 className="text-lg font-bold">Nova Transação</h1>
+            </div>
+          </div>
+          <p className="text-sm opacity-90">
+            Adicione uma nova receita ou despesa
+          </p>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden md:block p-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 mb-2">
               <Button 
                 variant="ghost" 
                 onClick={() => router.back()} 
-                className="h-8 w-8 p-0 md:h-10 md:w-auto md:px-4"
+                className="h-10 px-4"
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden md:inline ml-2">Voltar</span>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
               </Button>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Nova Transação</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Nova Transação</h1>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground">
               Adicione uma nova receita ou despesa ao seu controle financeiro
             </p>
           </div>
         </div>
 
-        {/* Form */}
-        <Card>
-          <CardHeader className="pb-4 md:pb-6">
-            <CardTitle className="text-lg md:text-xl">
-              Detalhes da Transação
-            </CardTitle>
-            <CardDescription>
-              Preencha as informações da sua movimentação financeira
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="mb-4 md:mb-6 text-sm p-3 md:p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-md">
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-              {/* Tipo e Valor - Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type" className="flex items-center gap-2">
-                    Tipo <span className="text-destructive">*</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Escolha se é uma receita (entrada) ou despesa (saída)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </Label>
-                  <Select 
-                    value={formData.type} 
-                    onValueChange={(value) => handleInputChange('type', value)}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="receita">
-                        <div className="flex items-center gap-2">
-                          <ArrowUpCircle className="h-4 w-4 text-green-500" />
-                          <span>Receita</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="despesa">
-                        <div className="flex items-center gap-2">
-                          <ArrowDownCircle className="h-4 w-4 text-red-500" />
-                          <span>Despesa</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="amount" className="flex items-center gap-2">
-                    Valor (R$) <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    placeholder="0,00"
-                    value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', e.target.value)}
-                    className="h-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Descrição */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    Descrição <span className="text-destructive">*</span>
+        <div className="p-3 sm:p-4 overflow-x-hidden">
+          <div className="max-w-2xl mx-auto">
+            {/* Form Card */}
+            <Card className="w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Info className="h-5 w-5" />
+                  Detalhes da Transação
+                </CardTitle>
+                <CardDescription>
+                  Preencha as informações da sua movimentação financeira
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {error && (
+                  <div className="text-sm p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-md">
+                    {error}
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {descriptionLength}/200
-                  </span>
-                </Label>
-                <Input
-                  id="description"
-                  placeholder="Ex: Compra no supermercado, Salário mensal..."
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  maxLength={200}
-                  className="h-10"
-                  required
-                />
-              </div>
-
-              {/* Categoria e Data - Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="flex items-center gap-2">
-                    Categoria <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => handleInputChange('category', value)}
-                    disabled={!formData.type || categoriesLoading}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder={
-                        categoriesLoading ? "Carregando categorias..." : (formData.type ? "Selecione a categoria" : "Primeiro selecione o tipo")
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoriasFiltradas.length > 0 ? (
-                        categoriasFiltradas.map((categoria) => (
-                          <SelectItem key={categoria._id} value={categoria.name}>
-                            {categoria.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-category" disabled>
-                          {formData.type ? "Nenhuma categoria encontrada" : "Selecione um tipo"}
+                )}
+                
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Tipo - Mobile first */}
+                  <div className="space-y-2">
+                    <Label htmlFor="type" className="flex items-center gap-2 text-sm font-medium">
+                      Tipo <span className="text-destructive">*</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Escolha se é uma receita (entrada) ou despesa (saída)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </Label>
+                    <Select 
+                      value={formData.type} 
+                      onValueChange={(value) => handleInputChange('type', value)}
+                    >
+                      <SelectTrigger className="h-12 text-base">
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="receita">
+                          <div className="flex items-center gap-3 py-1">
+                            <ArrowUpCircle className="h-5 w-5 text-green-500" />
+                            <div>
+                              <div className="font-medium">Receita</div>
+                              <div className="text-xs text-muted-foreground">Dinheiro que entra</div>
+                            </div>
+                          </div>
                         </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
+                        <SelectItem value="despesa">
+                          <div className="flex items-center gap-3 py-1">
+                            <ArrowDownCircle className="h-5 w-5 text-red-500" />
+                            <div>
+                              <div className="font-medium">Despesa</div>
+                              <div className="text-xs text-muted-foreground">Dinheiro que sai</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="date" className="flex items-center gap-2">
-                    Data <span className="text-destructive">*</span>
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full h-10 justify-start text-left font-normal",
-                          !formData.date && "text-muted-foreground"
+                  {/* Valor */}
+                  <div className="space-y-2">
+                    <Label htmlFor="amount" className="flex items-center gap-2 text-sm font-medium">
+                      Valor (R$) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="0,00"
+                      value={formData.amount}
+                      onChange={(e) => handleInputChange('amount', e.target.value)}
+                      className="h-12 text-base"
+                      required
+                    />
+                  </div>
+
+                  {/* Descrição */}
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="flex items-center justify-between text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        Descrição <span className="text-destructive">*</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {descriptionLength}/200
+                      </span>
+                    </Label>
+                    <Input
+                      id="description"
+                      placeholder="Ex: Compra no supermercado, Salário mensal..."
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      maxLength={200}
+                      className="h-12 text-base"
+                      required
+                    />
+                  </div>
+
+                  {/* Categoria */}
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="flex items-center gap-2 text-sm font-medium">
+                      Categoria <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => handleInputChange('category', value)}
+                      disabled={!formData.type || categoriesLoading}
+                    >
+                      <SelectTrigger className="h-12 text-base">
+                        <SelectValue placeholder={
+                          categoriesLoading ? "Carregando categorias..." : (formData.type ? "Selecione a categoria" : "Primeiro selecione o tipo")
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoriasFiltradas.length > 0 ? (
+                          categoriasFiltradas.map((categoria) => (
+                            <SelectItem key={categoria._id} value={categoria.name}>
+                              <div className="py-1">
+                                <div className="font-medium">{categoria.name}</div>
+                                {categoria.description && (
+                                  <div className="text-xs text-muted-foreground">{categoria.description}</div>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-category" disabled>
+                            {formData.type ? "Nenhuma categoria encontrada" : "Selecione um tipo"}
+                          </SelectItem>
                         )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? format(formData.date, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.date}
-                        onSelect={(date) => date && handleInputChange('date', date)}
-                        initialFocus
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Observações */}
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="flex items-center justify-between">
-                  <span>Observações</span>
-                  <span className="text-xs text-muted-foreground">
-                    {notesLength}/500
-                  </span>
-                </Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Informações adicionais sobre esta transação (opcional)"
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  maxLength={500}
-                  rows={3}
-                  className="min-h-[80px] resize-y"
-                />
-              </div>
+                  {/* Data */}
+                  <div className="space-y-2">
+                    <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium">
+                      Data <span className="text-destructive">*</span>
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full h-12 justify-start text-left font-normal text-base",
+                            !formData.date && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-3 h-5 w-5" />
+                          {formData.date ? format(formData.date, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData.date}
+                          onSelect={(date) => date && handleInputChange('date', date)}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
 
-              {/* Botões */}
-              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-4 pt-4 md:pt-6">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                  disabled={loading}
-                  className="w-full sm:w-auto"
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full sm:w-auto"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Salvar Transação
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                  {/* Observações */}
+                  <div className="space-y-2">
+                    <Label htmlFor="notes" className="flex items-center justify-between text-sm font-medium">
+                      <span>Observações</span>
+                      <span className="text-xs text-muted-foreground">
+                        {notesLength}/500
+                      </span>
+                    </Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Informações adicionais sobre esta transação (opcional)"
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      maxLength={500}
+                      rows={4}
+                      className="min-h-[100px] resize-y text-base"
+                    />
+                  </div>
+
+                  {/* Botões - Mobile optimized */}
+                  <div className="flex flex-col gap-3 pt-6">
+                    <Button 
+                      type="submit" 
+                      disabled={loading}
+                      className="w-full h-12 text-base font-medium"
+                      size="lg"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-5 w-5" />
+                          Salvar Transação
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.back()}
+                      disabled={loading}
+                      className="w-full h-12 text-base"
+                      size="lg"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
-} 
+}

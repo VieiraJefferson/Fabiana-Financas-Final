@@ -71,10 +71,10 @@ export function FabiAssistant({ context = "dashboard", className }: FabiAssistan
   };
 
   return (
-    <div className={cn("fixed bottom-6 right-6 z-40", className)}>
+    <div className={cn("fixed z-40", className || "bottom-20 md:bottom-6 right-4 md:right-6")}>
       {/* Welcome Message */}
       {showWelcome && !isMinimized && (
-        <div className="absolute bottom-20 right-0 mb-4 animate-in slide-in-from-bottom-4">
+        <div className="absolute bottom-16 md:bottom-20 right-0 mb-4 animate-in slide-in-from-bottom-4">
           <div className="bg-background border border-border rounded-lg p-4 shadow-lg max-w-xs">
             <div className="flex items-start gap-3">
               <FabiCharacter size="small" animation="wave" />
@@ -97,7 +97,8 @@ export function FabiAssistant({ context = "dashboard", className }: FabiAssistan
               </div>
               <button
                 onClick={handleClose}
-                className="text-muted-foreground hover:text-foreground text-xs"
+                className="text-muted-foreground hover:text-foreground text-xs p-1 hover:bg-muted rounded"
+                aria-label="Fechar"
               >
                 ✕
               </button>
@@ -108,7 +109,7 @@ export function FabiAssistant({ context = "dashboard", className }: FabiAssistan
 
       {/* Tip Bubble */}
       {isVisible && !isMinimized && !showWelcome && (
-        <div className="absolute bottom-20 right-0 mb-4 animate-in slide-in-from-bottom-4">
+        <div className="absolute bottom-16 md:bottom-20 right-0 mb-4 animate-in slide-in-from-bottom-4">
           <div className="bg-background border border-border rounded-lg p-4 shadow-lg max-w-sm">
             <div className="flex items-start gap-3">
               <FabiCharacter size="small" animation="thinking" />
@@ -125,7 +126,8 @@ export function FabiAssistant({ context = "dashboard", className }: FabiAssistan
               </div>
               <button
                 onClick={hideTip}
-                className="text-muted-foreground hover:text-foreground text-xs"
+                className="text-muted-foreground hover:text-foreground text-xs p-1 hover:bg-muted rounded"
+                aria-label="Fechar"
               >
                 ✕
               </button>
@@ -145,9 +147,10 @@ export function FabiAssistant({ context = "dashboard", className }: FabiAssistan
         <button
           onClick={handleFabiClick}
           className={cn(
-            "relative transition-all duration-300 hover:scale-110",
+            "relative transition-all duration-300 hover:scale-110 rounded-full p-1",
             isMinimized ? "opacity-70 hover:opacity-100" : ""
           )}
+          aria-label="Assistente Fabi"
         >
           <FabiCharacter 
             size={isMinimized ? "small" : "medium"}
@@ -163,15 +166,21 @@ export function FabiAssistant({ context = "dashboard", className }: FabiAssistan
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => showTip(context)}
-                  className="text-xs px-2 py-1 hover:bg-muted rounded text-left"
+                  className="text-xs px-2 py-1 hover:bg-muted rounded text-left whitespace-nowrap"
                 >
                   💡 Dica
                 </button>
                 <button
                   onClick={handleMinimize}
-                  className="text-xs px-2 py-1 hover:bg-muted rounded text-left"
+                  className="text-xs px-2 py-1 hover:bg-muted rounded text-left whitespace-nowrap"
                 >
                   ➖ Minimizar
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="text-xs px-2 py-1 hover:bg-muted rounded text-left whitespace-nowrap text-red-600 dark:text-red-400"
+                >
+                  ✕ Fechar
                 </button>
               </div>
             </div>
