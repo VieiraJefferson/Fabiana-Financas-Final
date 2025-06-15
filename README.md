@@ -112,19 +112,22 @@ Esta seção consolida todas as funcionalidades e melhorias planejadas para o pr
   - [x] Imagem de fundo `login-background.png` configurada.
   - [x] Animação do personagem "Fabi" removida.
 
-### Parte 2: Funcionalidades Financeiras Essenciais (A Fazer 🎯)
+### Parte 2: Funcionalidades Financeiras Essenciais (Concluído ✅)
 - **Sistema de Categorias Personalizadas:**
-  - [ ] Permitir que o usuário crie, edite e exclua suas próprias categorias de transação.
+  - [x] Permitir que o usuário crie, edite e exclua suas próprias categorias de transação.
 - **Sistema de Orçamento Mensal:**
-  - [ ] Definir orçamentos por categoria.
-  - [ ] Alertas visuais quando o orçamento estiver próximo de ser atingido.
+  - [x] Alertas visuais automáticos (80% e 100% do orçamento)
+  - [x] Integração com personagem Fabi
+  - [x] Definir orçamentos por categoria
+  - [x] Interface para gerenciar orçamentos
+  - [x] Backend para orçamentos personalizados
 - **Exportação de Dados:**
-  - [ ] Exportar relatórios e transações para formatos como PDF ou CSV/Excel.
+  - [x] Exportar relatórios e transações para formatos como PDF ou CSV/Excel.
 
-### Parte 3: Conteúdo e Engajamento (A Fazer 🎯)
+### Parte 3: Conteúdo e Engajamento (Em Progresso 🔄)
 - **Sistema de Metas/Objetivos Financeiros:**
-  - [ ] Página dedicada para criar e acompanhar metas (ex: economizar para uma viagem, comprar um carro).
-  - [ ] Tracking de progresso com barras e gráficos.
+  - [x] Página dedicada para criar e acompanhar metas (ex: economizar para uma viagem, comprar um carro).
+  - [x] Tracking de progresso com barras e gráficos.
 - **Sistema de Gamificação:**
   - [ ] Conquistas e "badges" por metas atingidas (ex: "Mestre da Economia").
   - [ ] Sistema de pontos por hábitos financeiros positivos.

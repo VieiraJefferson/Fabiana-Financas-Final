@@ -49,6 +49,9 @@ import {
   Target,
   Trash,
   MoreHorizontal,
+  Plus,
+  Minus,
+  DollarSign,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -87,7 +90,11 @@ export default function MetasPage() {
   const [showNewGoalDialog, setShowNewGoalDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showQuickValueDialog, setShowQuickValueDialog] = useState(false);
   const [editingMeta, setEditingMeta] = useState<Meta | null>(null);
+  const [quickValueMeta, setQuickValueMeta] = useState<Meta | null>(null);
+  const [quickValueAmount, setQuickValueAmount] = useState('');
+  const [quickValueType, setQuickValueType] = useState<'add' | 'subtract'>('add');
 
   // Estados para filtros e ordenação
   const [filtroStatus, setFiltroStatus] = useState<string>('todas');
@@ -328,6 +335,68 @@ export default function MetasPage() {
     } catch (err: any) {
       console.error("Erro ao atualizar progresso:", err);
       toast.error("Erro ao atualizar progresso.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Funções para adicionar/subtrair valores rapidamente
+  const handleQuickAddValue = (meta: Meta) => {
+    setQuickValueMeta(meta);
+    setQuickValueType('add');
+    setQuickValueAmount('');
+    setShowQuickValueDialog(true);
+  };
+
+  const handleQuickSubtractValue = (meta: Meta) => {
+    setQuickValueMeta(meta);
+    setQuickValueType('subtract');
+    setQuickValueAmount('');
+    setShowQuickValueDialog(true);
+  };
+
+  const handleQuickValueSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickValueMeta || !quickValueAmount) return;
+
+    const amount = parseFloat(quickValueAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Por favor, insira um valor válido.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const headers = getAuthHeaders();
+      if (!headers) throw new Error("Usuário não autenticado.");
+
+      let newAmount;
+      if (quickValueType === 'add') {
+        newAmount = quickValueMeta.currentAmount + amount;
+      } else {
+        newAmount = Math.max(0, quickValueMeta.currentAmount - amount);
+      }
+
+      const { data } = await axios.patch(`/api/goals/${quickValueMeta._id}/progress`, { 
+        currentAmount: newAmount 
+      }, { headers });
+      
+      setMetas(prev => prev.map(meta => meta._id === quickValueMeta._id ? data : meta));
+      
+      const actionText = quickValueType === 'add' ? 'adicionado' : 'subtraído';
+      toast.success(`Valor ${actionText} com sucesso!`);
+      
+      // Verificar se a meta foi concluída
+      if (data.status === 'concluida') {
+        toast.success("🎉 Parabéns! Você atingiu sua meta!");
+      }
+
+      setShowQuickValueDialog(false);
+      setQuickValueMeta(null);
+      setQuickValueAmount('');
+    } catch (err: any) {
+      console.error("Erro ao atualizar valor:", err);
+      toast.error("Erro ao atualizar valor.");
     } finally {
       setIsLoading(false);
     }
@@ -589,6 +658,31 @@ export default function MetasPage() {
                     </div>
                     <Progress value={calculateProgress(meta.currentAmount, meta.targetAmount)} />
                   </div>
+                  
+                  {/* Botões de Ação Rápida - apenas para metas ativas */}
+                  {meta.status === 'ativa' && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
+                        onClick={() => handleQuickAddValue(meta)}
+                      >
+                        <Plus className="mr-1 h-3 w-3" />
+                        Adicionar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => handleQuickSubtractValue(meta)}
+                      >
+                        <Minus className="mr-1 h-3 w-3" />
+                        Retirar
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-muted-foreground">Status</p>
@@ -861,6 +955,145 @@ export default function MetasPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Valor Rápido */}
+      <Dialog open={showQuickValueDialog} onOpenChange={setShowQuickValueDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {quickValueType === 'add' ? 'Adicionar Valor' : 'Retirar Valor'}
+            </DialogTitle>
+            <DialogDescription>
+              {quickValueType === 'add' 
+                ? `Adicione um valor à meta "${quickValueMeta?.title}"`
+                : `Retire um valor da meta "${quickValueMeta?.title}"`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Informações da Meta */}
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">{quickValueMeta ? getMetaIcon(quickValueMeta.type) : '🎯'}</span>
+                <h3 className="font-medium">{quickValueMeta?.title}</h3>
+              </div>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>Valor atual: {quickValueMeta ? formatCurrency(quickValueMeta.currentAmount) : 'R$ 0,00'}</p>
+                <p>Meta: {quickValueMeta ? formatCurrency(quickValueMeta.targetAmount) : 'R$ 0,00'}</p>
+                <div className="mt-2">
+                  <Progress 
+                    value={quickValueMeta ? calculateProgress(quickValueMeta.currentAmount, quickValueMeta.targetAmount) : 0} 
+                    className="h-2"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Input do Valor */}
+            <div className="grid w-full gap-2">
+              <Label htmlFor="quickValue">
+                {quickValueType === 'add' ? 'Valor a adicionar' : 'Valor a retirar'}
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="quickValue"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0,00"
+                  value={quickValueAmount}
+                  onChange={(e) => setQuickValueAmount(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {quickValueType === 'add' 
+                  ? 'Digite o valor que deseja adicionar à sua meta'
+                  : 'Digite o valor que deseja retirar da sua meta'
+                }
+              </p>
+            </div>
+
+            {/* Preview do Resultado */}
+            {quickValueAmount && !isNaN(parseFloat(quickValueAmount)) && parseFloat(quickValueAmount) > 0 && quickValueMeta && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Preview:</h4>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Valor atual:</span>
+                    <span>{formatCurrency(quickValueMeta.currentAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {quickValueType === 'add' ? 'Valor a adicionar:' : 'Valor a retirar:'}
+                    </span>
+                    <span className={quickValueType === 'add' ? 'text-green-600' : 'text-red-600'}>
+                      {quickValueType === 'add' ? '+' : '-'}{formatCurrency(parseFloat(quickValueAmount))}
+                    </span>
+                  </div>
+                  <hr className="my-2" />
+                  <div className="flex justify-between font-medium">
+                    <span>Novo valor:</span>
+                    <span>
+                      {formatCurrency(
+                        quickValueType === 'add' 
+                          ? quickValueMeta.currentAmount + parseFloat(quickValueAmount)
+                          : Math.max(0, quickValueMeta.currentAmount - parseFloat(quickValueAmount))
+                      )}
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <Progress 
+                      value={calculateProgress(
+                        quickValueType === 'add' 
+                          ? quickValueMeta.currentAmount + parseFloat(quickValueAmount)
+                          : Math.max(0, quickValueMeta.currentAmount - parseFloat(quickValueAmount)),
+                        quickValueMeta.targetAmount
+                      )} 
+                      className="h-2"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowQuickValueDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={(e) => {
+                e.preventDefault();
+                handleQuickValueSubmit(e);
+              }}
+              disabled={isLoading || !quickValueAmount || isNaN(parseFloat(quickValueAmount)) || parseFloat(quickValueAmount) <= 0}
+              className={quickValueType === 'add' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {quickValueType === 'add' ? 'Adicionando...' : 'Retirando...'}
+                </>
+              ) : (
+                <>
+                  {quickValueType === 'add' ? (
+                    <Plus className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Minus className="mr-2 h-4 w-4" />
+                  )}
+                  {quickValueType === 'add' ? 'Adicionar Valor' : 'Retirar Valor'}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

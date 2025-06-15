@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, ReactElement } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, ReactElement } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
@@ -14,9 +14,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { 
+  FabiCharacter, 
+  FabiTutorial, 
   FabiGoalAchieved, 
-  FabiBudgetWarning, 
-  FabiBudgetDanger, 
+  FabiBudgetWarning,
+  FabiBudgetDanger,
+  FabiBudgetAlert,
   useFabiFinancialFeedback 
 } from "@/components/fabi-character";
 import { toast } from "sonner";
@@ -53,7 +56,14 @@ import {
   Stethoscope,
   Building,
   Wrench,
-  HelpCircle
+  HelpCircle,
+  AlertTriangle,
+  AlertCircle,
+  BarChart3,
+  PieChart,
+  Download,
+  FileText,
+  FileSpreadsheet
 } from "lucide-react";
 import { 
   Select,
@@ -103,11 +113,15 @@ export default function DashboardPage() {
   } = useFabiFinancialFeedback();
 
   const [financialData, setFinancialData] = useState<FinancialData | null>(null);
+  const [budgetSummary, setBudgetSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Ref para evitar múltiplas requisições simultâneas
+  const isFetchingRef = useRef(false);
 
   // Cache para dados financeiros
   const [cachedData, setCachedData] = useState<{[key: string]: {data: FinancialData, timestamp: number}} | null>(null);
@@ -180,6 +194,59 @@ export default function DashboardPage() {
     }
   }, [searchParams, router]);
 
+  const fetchFinancialData = async () => {
+    if (!session) return;
+    
+    try {
+      setIsRefreshing(true);
+      const headers = getAuthHeaders();
+      if (!headers) {
+        throw new Error("Usuário não autenticado.");
+      }
+
+      // Preparar parâmetros de data
+      const params = new URLSearchParams();
+      if (filters.dateRange.from) {
+        params.append('startDate', filters.dateRange.from.toISOString());
+      }
+      if (filters.dateRange.to) {
+        params.append('endDate', filters.dateRange.to.toISOString());
+      }
+
+      // Buscar dados financeiros
+      const { data } = await axios.get(`/api/transactions/summary?${params.toString()}`, { headers });
+      
+      // Buscar dados de orçamento
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      try {
+        const budgetResponse = await axios.get(`/api/budgets/summary?month=${currentMonth}&year=${currentYear}`, { headers });
+        setBudgetSummary(budgetResponse.data);
+      } catch (budgetError) {
+        console.log("Nenhum orçamento encontrado, usando valores padrão");
+        setBudgetSummary(null);
+      }
+
+      setFinancialData(data);
+      setError("");
+    } catch (err: any) {
+      console.error("Erro ao buscar dados financeiros:", err);
+      setError("Não foi possível carregar os dados financeiros.");
+      toast.error("Erro ao carregar dados financeiros.");
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // useEffect mais simples que só executa uma vez
+  useEffect(() => {
+    if (session) {
+      fetchFinancialData();
+    }
+  }, [session?.user?.id]); // Apenas quando o usuário muda
+
   const handlePeriodChange = useCallback((period: string) => {
     const now = new Date();
     let from = now;
@@ -201,78 +268,6 @@ export default function DashboardPage() {
     }
     setFilters({ period, dateRange: { from, to } });
   }, []);
-
-  useEffect(() => {
-    const fetchFinancialData = async () => {
-      if (!session || !filters.dateRange.from || !filters.dateRange.to) return;
-
-      setLoading(true);
-      setError("");
-
-      try {
-        const headers = getAuthHeaders();
-        if (!headers) throw new Error("Usuário não autenticado.");
-
-        const params = new URLSearchParams({
-          startDate: filters.dateRange.from.toISOString(),
-          endDate: filters.dateRange.to.toISOString(),
-        });
-
-        // Mostrar interface imediatamente com dados padrão se não temos dados
-        if (!financialData) {
-          setFinancialData({
-            saldo: 0,
-            receitas: 0,
-            despesas: 0,
-            transacoes: []
-          });
-          setLoading(false);
-        }
-
-        const [summaryResponse, transactionsResponse] = await Promise.all([
-          axios.get(`/api/transactions/summary?${params.toString()}`, { headers }),
-          axios.get('/api/transactions?limit=5&page=1', { headers })
-        ]);
-        
-        const summary = summaryResponse.data;
-        const transactions = transactionsResponse.data.transactions || [];
-
-        setFinancialData({
-          saldo: summary.saldo || 0,
-          receitas: summary.totalReceitas || 0,
-          despesas: summary.totalDespesas || 0,
-          transacoes: transactions.map((t: any) => ({
-            id: t._id,
-            tipo: t.type,
-            descricao: t.description,
-            valor: t.amount,
-            data: t.date,
-            categoria: t.category
-          }))
-        });
-
-      } catch (err: any) {
-        console.error("Erro ao buscar dados financeiros:", err);
-        
-        // Se não temos dados, mostrar dados padrão
-        if (!financialData) {
-          setFinancialData({
-            saldo: 0,
-            receitas: 0,
-            despesas: 0,
-            transacoes: []
-          });
-        }
-        
-        setError("Não foi possível carregar os dados financeiros. Tente atualizar a página.");
-        toast.error("Erro ao carregar dados financeiros.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFinancialData();
-  }, [session, getAuthHeaders, toast, filters]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -366,7 +361,7 @@ export default function DashboardPage() {
 
   // Memoized recent transactions
   const recentTransactions = useMemo(() => {
-    if (!financialData) return [];
+    if (!financialData || !financialData.transacoes) return [];
     return financialData.transacoes
       .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
       .slice(0, 5);
@@ -393,6 +388,171 @@ export default function DashboardPage() {
     receitas: 0,
     despesas: 0,
     transacoes: []
+  };
+
+  // Função para calcular status do orçamento (memoizada)
+  const budgetStatus = useMemo(() => {
+    if (!financialData) return null;
+    
+    // Usar dados reais de orçamento se disponíveis
+    if (budgetSummary && budgetSummary.totals) {
+      return {
+        budget: budgetSummary.totals.budgeted,
+        spent: budgetSummary.totals.spent,
+        remaining: budgetSummary.totals.remaining,
+        percentage: budgetSummary.totals.percentage,
+        status: budgetSummary.totals.status
+      };
+    }
+    
+    // Fallback para orçamento padrão se não houver orçamentos configurados
+    const monthlyBudget = 3000;
+    const currentSpent = financialData.despesas;
+    const percentage = (currentSpent / monthlyBudget) * 100;
+    const remaining = monthlyBudget - currentSpent;
+    
+    return {
+      budget: monthlyBudget,
+      spent: currentSpent,
+      remaining,
+      percentage: Math.min(percentage, 100),
+      status: percentage >= 100 ? 'danger' : percentage >= 80 ? 'warning' : 'safe'
+    };
+  }, [financialData, budgetSummary]);
+
+  // Funções de exportação de dados
+  const exportToCSV = (data: FinancialData, period: string) => {
+    const csvContent = [
+      // Cabeçalho
+      ['Tipo', 'Descrição', 'Valor', 'Data', 'Categoria'].join(','),
+      // Dados das transações
+      ...(data.transacoes || []).map(t => [
+        t.tipo,
+        `"${t.descricao}"`,
+        t.valor.toString(),
+        t.data,
+        `"${t.categoria}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `fabiana-financas-${period}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToPDF = async (data: FinancialData, period: string) => {
+    // Criar conteúdo HTML para PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Relatório Financeiro - Fabiana Finanças</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .summary { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+          .transactions { width: 100%; border-collapse: collapse; }
+          .transactions th, .transactions td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .transactions th { background-color: #4f46e5; color: white; }
+          .receita { color: #16a34a; }
+          .despesa { color: #dc2626; }
+          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Relatório Financeiro</h1>
+          <h2>Fabiana Finanças</h2>
+          <p>Período: ${period} | Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+        </div>
+        
+        <div class="summary">
+          <h3>Resumo Financeiro</h3>
+          <p><strong>Saldo Total:</strong> R$ ${data.saldo.toFixed(2).replace('.', ',')}</p>
+          <p><strong>Total de Receitas:</strong> R$ ${data.receitas.toFixed(2).replace('.', ',')}</p>
+          <p><strong>Total de Despesas:</strong> R$ ${data.despesas.toFixed(2).replace('.', ',')}</p>
+          <p><strong>Total de Transações:</strong> ${(data.transacoes || []).length}</p>
+        </div>
+
+        <h3>Detalhamento das Transações</h3>
+        <table class="transactions">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(data.transacoes || []).map(t => `
+              <tr>
+                <td>${new Date(t.data).toLocaleDateString('pt-BR')}</td>
+                <td class="${t.tipo}">${t.tipo === 'receita' ? 'Receita' : 'Despesa'}</td>
+                <td>${t.descricao}</td>
+                <td>${t.categoria}</td>
+                <td class="${t.tipo}">R$ ${t.valor.toFixed(2).replace('.', ',')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Relatório gerado automaticamente pelo sistema Fabiana Finanças</p>
+          <p>Para mais informações, acesse nossa plataforma</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Criar e baixar PDF
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+  };
+
+  // Handlers para exportação
+  const handleExportCSV = () => {
+    if (!financialData || !financialData.transacoes || financialData.transacoes.length === 0) {
+      toast.error("Não há dados para exportar");
+      return;
+    }
+    
+    const periodLabel = filters.period === 'this-month' ? 'este-mes' : 
+                       filters.period === 'last-month' ? 'mes-passado' : 
+                       filters.period === 'this-year' ? 'este-ano' : 'personalizado';
+    
+    exportToCSV(financialData, periodLabel);
+    toast.success("Dados exportados para CSV com sucesso! 📊");
+  };
+
+  const handleExportPDF = () => {
+    if (!financialData || !financialData.transacoes || financialData.transacoes.length === 0) {
+      toast.error("Não há dados para exportar");
+      return;
+    }
+    
+    const periodLabel = filters.period === 'this-month' ? 'Este Mês' : 
+                       filters.period === 'last-month' ? 'Mês Passado' : 
+                       filters.period === 'this-year' ? 'Este Ano' : 'Período Personalizado';
+    
+    exportToPDF(financialData, periodLabel);
+    toast.success("Relatório PDF gerado com sucesso! 📄");
   };
 
   return (
@@ -505,6 +665,31 @@ export default function DashboardPage() {
                   </Popover>
                 </div>
               )}
+              
+              {/* Botões de Exportação */}
+              <div className="space-y-2">
+                <Label>Exportar Dados</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-2"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -512,6 +697,15 @@ export default function DashboardPage() {
             <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-500/20 rounded-md text-red-600 dark:text-red-400">
               <p className="font-medium">{error}</p>
             </div>
+          )}
+
+          {/* Alerta de Orçamento */}
+          {budgetStatus && budgetStatus.status !== 'safe' && (
+            <FabiBudgetAlert
+              budgetStatus={budgetStatus}
+              onViewExpenses={() => router.push('/dashboard/transacoes')}
+              onViewReports={() => router.push('/dashboard/relatorios')}
+            />
           )}
 
           {/* Cards de Estatísticas - Desktop */}
@@ -630,6 +824,17 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Alerta de Orçamento - Mobile */}
+            {budgetStatus && budgetStatus.status !== 'safe' && (
+              <div>
+                <FabiBudgetAlert
+                  budgetStatus={budgetStatus}
+                  onViewExpenses={() => router.push('/dashboard/transacoes')}
+                  onViewReports={() => router.push('/dashboard/relatorios')}
+                />
+              </div>
+            )}
+
             {/* Seção de Ações Rápidas */}
             <div>
               <h2 className="text-lg font-semibold mb-3 px-1">Ações Rápidas</h2>
@@ -707,6 +912,48 @@ export default function DashboardPage() {
                       onClick={handleNavigateToMentorship}
                     >
                       Agendar
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Seção de Exportação - Mobile */}
+            <div>
+              <h2 className="text-lg font-semibold mb-3 px-1">Exportar Dados</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+                  <CardContent className="p-4 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-blue-500 rounded-full flex items-center justify-center">
+                      <FileSpreadsheet className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-sm text-blue-900 dark:text-blue-100 mb-1">Planilha CSV</h3>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">Dados para Excel/Sheets</p>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="w-full border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white text-xs h-8"
+                      onClick={handleExportCSV}
+                    >
+                      Baixar CSV
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-0 shadow-sm bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20">
+                  <CardContent className="p-4 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-red-500 rounded-full flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-sm text-red-900 dark:text-red-100 mb-1">Relatório PDF</h3>
+                    <p className="text-xs text-red-700 dark:text-red-300 mb-3">Documento completo</p>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="w-full border-red-500 text-red-600 hover:bg-red-500 hover:text-white text-xs h-8"
+                      onClick={handleExportPDF}
+                    >
+                      Gerar PDF
                     </Button>
                   </CardContent>
                 </Card>
@@ -816,7 +1063,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {displayData.transacoes.length === 0 ? (
+              {!displayData.transacoes || displayData.transacoes.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
                     <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
@@ -897,6 +1144,49 @@ export default function DashboardPage() {
                   </Button>
                   <Button size="sm" variant="outline" onClick={simulateBudgetDanger}>
                     Simular Perigo Orçamento
+                  </Button>
+                  
+                  {/* Novos botões para testar diferentes cenários */}
+                  <Button size="sm" variant="outline" onClick={() => {
+                    // Simular orçamento seguro (50% usado)
+                    const mockSafeData = { 
+                      saldo: 1500, 
+                      receitas: 3000, 
+                      despesas: 1500, 
+                      transacoes: [] 
+                    };
+                    setFinancialData(mockSafeData);
+                    toast.success("Simulando orçamento seguro - Fabi feliz! 😊");
+                  }}>
+                    Simular Orçamento Seguro
+                  </Button>
+                  
+                  <Button size="sm" variant="outline" onClick={() => {
+                    // Simular orçamento no limite (85% usado)
+                    const mockWarningData = { 
+                      saldo: 450, 
+                      receitas: 3000, 
+                      despesas: 2550, 
+                      transacoes: [] 
+                    };
+                    setFinancialData(mockWarningData);
+                    toast.warning("Simulando orçamento no limite - Fabi preocupada! 🤔");
+                  }}>
+                    Simular Orçamento Limite
+                  </Button>
+                  
+                  <Button size="sm" variant="outline" onClick={() => {
+                    // Simular orçamento estourado (120% usado)
+                    const mockDangerData = { 
+                      saldo: -600, 
+                      receitas: 3000, 
+                      despesas: 3600, 
+                      transacoes: [] 
+                    };
+                    setFinancialData(mockDangerData);
+                    toast.error("Simulando orçamento estourado - Fabi muito triste! 😟");
+                  }}>
+                    Simular Orçamento Estourado
                   </Button>
                 </div>
               </CardContent>

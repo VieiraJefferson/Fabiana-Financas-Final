@@ -48,7 +48,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  DollarSign
 } from "lucide-react";
 import Footer from "@/components/layout/Footer";
 
@@ -56,6 +57,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Transações", href: "/dashboard/transacoes", icon: ArrowRightLeft },
   { name: "Nova Transação", href: "/dashboard/nova-transacao", icon: PlusCircle },
+  { name: "Orçamentos", href: "/dashboard/orcamentos", icon: DollarSign },
   { name: "Relatórios", href: "/dashboard/relatorios", icon: AreaChart },
   { name: "Mentoria", href: "/dashboard/mentoria", icon: GraduationCap },
   { name: "Conteúdo", href: "/dashboard/conteudo", icon: Clapperboard },

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, BarChart3, PieChart } from "lucide-react";
 
 interface FabiCharacterProps {
   size?: "small" | "medium" | "large";
@@ -204,15 +204,15 @@ export function FabiBudgetWarning({ onClose }: FabiModalProps) {
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <Card className="w-full max-w-md mx-auto shadow-2xl border-yellow-200">
         <CardContent className="text-center p-6">
-          <FabiCharacter size="large" className="mx-auto mb-4" />
+          <FabiCharacter size="large" className="mx-auto mb-4" imageSrc="/fabi-sad.png" />
           <h2 className="text-2xl font-bold text-yellow-600 mb-2">
             Atenção! ⚠️
           </h2>
           <p className="text-muted-foreground mb-4">
-            Você está próximo do limite do seu orçamento.
+            Oi! Notei que você já gastou bastante este mês. Que tal darmos uma olhada nos seus gastos juntos?
           </p>
           <Button onClick={onClose} variant="outline" className="w-full">
-            Entendi
+            Vamos revisar!
           </Button>
         </CardContent>
       </Card>
@@ -225,19 +225,179 @@ export function FabiBudgetDanger({ onClose }: FabiModalProps) {
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <Card className="w-full max-w-md mx-auto shadow-2xl border-red-200">
         <CardContent className="text-center p-6">
-          <FabiCharacter size="large" className="mx-auto mb-4" />
+          <FabiCharacter size="large" className="mx-auto mb-4" imageSrc="/fabi-very-sad.png" />
           <h2 className="text-2xl font-bold text-red-600 mb-2">
-            Orçamento Estourado! 🚨
+            Ops! Orçamento Estourado! 🚨
           </h2>
           <p className="text-muted-foreground mb-4">
-            Você ultrapassou seu limite de gastos.
+            Ei, parece que ultrapassamos o limite do orçamento este mês. Não se preocupe, vamos ajustar isso juntos!
           </p>
           <Button onClick={onClose} variant="destructive" className="w-full">
-            Revisar Gastos
+            Vamos corrigir isso!
           </Button>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Novo componente para alertas de orçamento integrados
+interface FabiBudgetAlertProps {
+  budgetStatus: {
+    budget: number;
+    spent: number;
+    remaining: number;
+    percentage: number;
+    status: 'safe' | 'warning' | 'danger';
+  };
+  onViewExpenses: () => void;
+  onViewReports: () => void;
+}
+
+export function FabiBudgetAlert({ budgetStatus, onViewExpenses, onViewReports }: FabiBudgetAlertProps) {
+  const getFabiImage = () => {
+    switch (budgetStatus.status) {
+      case 'safe':
+        return '/fabi-happy.png';
+      case 'warning':
+        return '/fabi-sad.png';
+      case 'danger':
+        return '/fabi-very-sad.png';
+      default:
+        return '/fabi-neutral.png';
+    }
+  };
+
+  const getFabiMessage = () => {
+    switch (budgetStatus.status) {
+      case 'safe':
+        return 'Parabéns! Você está controlando muito bem seus gastos este mês! Continue assim! 😊';
+      case 'warning':
+        return 'Oi! Notei que você já gastou bastante este mês. Que tal darmos uma olhada nos seus gastos juntos? 🤔';
+      case 'danger':
+        return 'Ei, parece que ultrapassamos o limite do orçamento este mês. Não se preocupe, vamos ajustar isso juntos! 😟';
+      default:
+        return 'Como estão suas finanças hoje?';
+    }
+  };
+
+  const getTitle = () => {
+    switch (budgetStatus.status) {
+      case 'safe':
+        return 'Muito bem! 🎉';
+      case 'warning':
+        return 'Atenção! ⚠️';
+      case 'danger':
+        return 'Ops! Orçamento Estourado! 🚨';
+      default:
+        return 'Olá!';
+    }
+  };
+
+  const getButtonText = () => {
+    switch (budgetStatus.status) {
+      case 'safe':
+        return 'Continue assim!';
+      case 'warning':
+        return 'Vamos revisar!';
+      case 'danger':
+        return 'Vamos corrigir isso!';
+      default:
+        return 'Entendi';
+    }
+  };
+
+  if (budgetStatus.status === 'safe') {
+    return null; // Não mostra alerta quando está tudo bem
+  }
+
+  return (
+    <Card className={cn(
+      "border-2",
+      budgetStatus.status === 'danger' 
+        ? "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-500/20" 
+        : "border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-500/20"
+    )}>
+      <CardContent className="p-6">
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          {/* Fabi Character */}
+          <div className="flex-shrink-0">
+            <FabiCharacter 
+              size="large" 
+              imageSrc={getFabiImage()}
+              className="w-20 h-20 md:w-24 md:h-24"
+            />
+          </div>
+          
+          {/* Message Content */}
+          <div className="flex-1 text-center md:text-left">
+            <h3 className={cn(
+              "text-xl font-bold mb-2",
+              budgetStatus.status === 'danger' 
+                ? "text-red-700 dark:text-red-300" 
+                : "text-yellow-700 dark:text-yellow-300"
+            )}>
+              {getTitle()}
+            </h3>
+            <p className="text-muted-foreground mb-4 leading-relaxed">
+              {getFabiMessage()}
+            </p>
+            
+            {/* Budget Progress */}
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Gasto do mês</span>
+                <span className="font-medium">
+                  R$ {budgetStatus.spent.toFixed(2).replace('.', ',')} / R$ {budgetStatus.budget.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
+                <div 
+                  className={cn(
+                    "h-3 rounded-full transition-all duration-300",
+                    budgetStatus.status === 'danger' 
+                      ? "bg-red-500" 
+                      : "bg-yellow-500"
+                  )}
+                  style={{ width: `${Math.min(budgetStatus.percentage, 100)}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{budgetStatus.percentage.toFixed(1)}% usado</span>
+                <span>
+                  {budgetStatus.remaining >= 0 
+                    ? `R$ ${budgetStatus.remaining.toFixed(2).replace('.', ',')} restante`
+                    : `R$ ${Math.abs(budgetStatus.remaining).toFixed(2).replace('.', ',')} acima do limite`
+                  }
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={onViewExpenses}
+              >
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Ver Gastos
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={onViewReports}
+              >
+                <PieChart className="mr-2 h-4 w-4" />
+                Relatórios
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
