@@ -4,7 +4,10 @@ const { User } = require('../models/userModel.js');
 
 const protect = asyncHandler(async (req, res, next) => {
   console.log('=== DEBUG AUTH MIDDLEWARE ===');
-  console.log('Headers:', req.headers);
+  console.log('URL:', req.url);
+  console.log('Method:', req.method);
+  console.log('Authorization header:', req.headers.authorization);
+  console.log('All headers:', req.headers);
   
   let token;
 

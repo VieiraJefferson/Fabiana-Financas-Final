@@ -5,12 +5,18 @@ export const useAuth = () => {
   const { data: session, status } = useSession();
 
   const getAuthToken = useCallback(() => {
+    console.log('=== DEBUG useAuth.getAuthToken ===');
+    console.log('Session:', session);
+    console.log('Session accessToken:', session?.accessToken);
+    
     if (!session?.accessToken) {
+      console.log('Token não encontrado na sessão');
       // Retornar null ou uma string vazia em vez de lançar um erro aqui
       // para permitir que a UI reaja de forma mais graciosa.
       return null;
     }
     
+    console.log('Token encontrado:', session.accessToken.substring(0, 20) + '...');
     // Usar o JWT token real do backend
     return session.accessToken;
   }, [session]);
