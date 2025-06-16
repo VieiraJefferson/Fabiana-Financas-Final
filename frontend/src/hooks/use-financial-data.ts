@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { useAuth } from './use-auth';
+import { useAuth } from '@/hooks/useAuth';
 import axios from 'axios';
 import { toast } from 'sonner';
 
