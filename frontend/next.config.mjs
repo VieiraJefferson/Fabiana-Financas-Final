@@ -11,17 +11,8 @@ const nextConfig = {
     ];
   },
   
-  // Enable experimental features for better performance
-  experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-  },
-  
   // Compress responses
   compress: true,
-  
-  // Enable SWC minification
-  swcMinify: true,
   
   // Image optimization
   images: {
@@ -29,7 +20,7 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
   
-  // Headers for caching
+  // Headers for security and caching
   async headers() {
     return [
       {
