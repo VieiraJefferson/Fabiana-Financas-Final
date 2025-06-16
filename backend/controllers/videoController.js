@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const cloudinary = require('../config/cloudinary');
+const Video = require('../models/videoModel');
 
 // @desc    Listar todos os vídeos
 // @route   GET /api/admin/videos
@@ -8,38 +9,9 @@ const getVideos = asyncHandler(async (req, res) => {
   try {
     console.log('📹 Listando vídeos...');
     
-    // TODO: Implementar busca no banco de dados
-    // Por enquanto retorna dados mockados
-    const videos = [
-      {
-        _id: '1',
-        title: 'Introdução ao Orçamento Pessoal',
-        description: 'Como começar a organizar suas finanças',
-        category: 'Orçamento',
-        level: 'basic',
-        duration: 900,
-        thumbnail: 'https://res.cloudinary.com/dpilz4p6g/image/upload/v1/fabiana-financas/thumbnails/orcamento-intro.jpg',
-        videoUrl: 'https://res.cloudinary.com/dpilz4p6g/video/upload/v1/fabiana-financas/videos/orcamento-intro.mp4',
-        status: 'published',
-        views: 1250,
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15')
-      },
-      {
-        _id: '2',
-        title: 'Primeiros Passos nos Investimentos',
-        description: 'Conceitos básicos sobre investir seu dinheiro',
-        category: 'Investimentos',
-        level: 'basic',
-        duration: 1200,
-        thumbnail: 'https://res.cloudinary.com/dpilz4p6g/image/upload/v1/fabiana-financas/thumbnails/investimentos-intro.jpg',
-        videoUrl: 'https://res.cloudinary.com/dpilz4p6g/video/upload/v1/fabiana-financas/videos/investimentos-intro.mp4',
-        status: 'published',
-        views: 890,
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-10')
-      }
-    ];
+    const videos = await Video.find()
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -61,40 +33,42 @@ const getVideos = asyncHandler(async (req, res) => {
 // @access  Private (Admin only)
 const createVideo = asyncHandler(async (req, res) => {
   try {
-    const { title, description, category, level, thumbnailUrl, videoUrl, duration, status = 'draft' } = req.body;
+    const { title, description, category, difficulty, thumbnailUrl, videoUrl, duration, requiredPlan = 'free', tags = [], isPublished = false } = req.body;
 
-    console.log('📹 Criando novo vídeo:', { title, category, level });
+    console.log('📹 Criando novo vídeo:', { title, category, difficulty });
 
     // Validações
-    if (!title || !description || !category || !level) {
+    if (!title || !description || !category || !difficulty) {
       return res.status(400).json({
         success: false,
-        message: 'Campos obrigatórios: title, description, category, level'
+        message: 'Campos obrigatórios: title, description, category, difficulty'
       });
     }
 
-    // TODO: Implementar criação no banco de dados
-    const newVideo = {
-      _id: Date.now().toString(),
+    const video = new Video({
       title,
       description,
-      category,
-      level,
-      thumbnail: thumbnailUrl,
       videoUrl,
-      duration: duration || 0,
-      status,
-      views: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      thumbnail: thumbnailUrl,
+      duration,
+      category,
+      difficulty,
+      requiredPlan,
+      tags,
+      isPublished,
+      publishedAt: isPublished ? new Date() : null,
+      createdBy: req.user.id,
+    });
 
-    console.log('✅ Vídeo criado:', newVideo);
+    const savedVideo = await video.save();
+    await savedVideo.populate('createdBy', 'name email');
+
+    console.log('✅ Vídeo criado no banco:', savedVideo._id);
 
     res.status(201).json({
       success: true,
       message: 'Vídeo criado com sucesso!',
-      data: newVideo
+      data: savedVideo
     });
 
   } catch (error) {
@@ -116,14 +90,22 @@ const updateVideo = asyncHandler(async (req, res) => {
 
     console.log('📝 Atualizando vídeo:', id, updates);
 
-    // TODO: Implementar atualização no banco de dados
-    const updatedVideo = { 
-      _id: id, 
-      ...updates, 
-      updatedAt: new Date() 
-    };
+    const video = await Video.findById(id);
+    
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vídeo não encontrado'
+      });
+    }
 
-    console.log('✅ Vídeo atualizado:', updatedVideo);
+    const updatedVideo = await Video.findByIdAndUpdate(
+      id,
+      updates,
+      { new: true, runValidators: true }
+    ).populate('createdBy', 'name email');
+
+    console.log('✅ Vídeo atualizado no banco:', updatedVideo._id);
 
     res.json({
       success: true,
@@ -149,8 +131,24 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     console.log('🗑️ Deletando vídeo:', id);
 
-    // TODO: Implementar remoção no banco de dados
-    // TODO: Remover arquivos do Cloudinary
+    const video = await Video.findById(id);
+    
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vídeo não encontrado'
+      });
+    }
+
+    // TODO: Remover arquivos do Cloudinary se necessário
+    // if (video.videoUrl) {
+    //   const publicId = video.videoUrl.split('/').pop().split('.')[0];
+    //   await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    // }
+
+    await Video.findByIdAndDelete(id);
+
+    console.log('✅ Vídeo deletado do banco:', id);
 
     res.json({
       success: true,
