@@ -339,12 +339,9 @@ export default function NovaTransacaoPage() {
                       <SelectContent>
                         {categoriasFiltradas.length > 0 ? (
                           categoriasFiltradas.map((categoria) => (
-                            <SelectItem key={categoria._id} value={categoria.name}>
+                            <SelectItem key={(categoria as any)._id || categoria.name} value={categoria.name}>
                               <div className="py-1">
                                 <div className="font-medium">{categoria.name}</div>
-                                {categoria.description && (
-                                  <div className="text-xs text-muted-foreground">{categoria.description}</div>
-                                )}
                               </div>
                             </SelectItem>
                           ))
