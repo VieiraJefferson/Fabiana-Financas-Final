@@ -18,19 +18,34 @@ const handler = NextAuth({
 
         const backendUrl = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
         const loginUrl = `${backendUrl}/api/users/login`;
+        
+        console.log('=== DEBUG NEXTAUTH ===');
+        console.log('Backend URL:', backendUrl);
+        console.log('Login URL:', loginUrl);
+        console.log('Credentials:', { email: credentials.email, password: '***' });
 
         try {
-          const { data: user } = await axios.post(loginUrl, {
+          console.log('Fazendo requisição para:', loginUrl);
+          const response = await axios.post(loginUrl, {
             email: credentials.email,
             password: credentials.password,
           });
-
+          
+          console.log('Response status:', response.status);
+          console.log('Response data:', response.data);
+          
+          const user = response.data;
           if (user) {
             return user;
           } else {
             return null;
           }
         } catch (error: any) {
+          console.error('=== ERROR NEXTAUTH ===');
+          console.error('Error status:', error.response?.status);
+          console.error('Error data:', error.response?.data);
+          console.error('Error message:', error.message);
+          console.error('Full error:', error);
           throw new Error(error.response?.data?.message || "Falha na autenticação");
         }
       },
@@ -38,7 +53,6 @@ const handler = NextAuth({
   ],
   pages: {
     signIn: '/login',
-    error: "/login",
   },
   callbacks: {
     async jwt({ token, user }) {

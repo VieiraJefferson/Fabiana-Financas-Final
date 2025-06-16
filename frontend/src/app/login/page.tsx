@@ -29,8 +29,7 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: true,
-        callbackUrl: "/dashboard?loggedin=true",
+        redirect: false,
       });
 
       toast.dismiss(loadingToast);
@@ -38,6 +37,9 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Email ou senha incorretos");
         toast.error("Email ou senha incorretos");
+      } else if (result?.ok) {
+        toast.success("Login realizado com sucesso!");
+        router.push("/dashboard?loggedin=true");
       }
 
     } catch (err) {
