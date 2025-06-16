@@ -4,13 +4,9 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
 
-// Parâmetros da rota
-interface Params {
-  id: string;
-}
-
 // Atualizar uma categoria
-export async function PUT(req: NextRequest, { params }: { params: Params }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
@@ -21,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
     
     // Fazer proxy da requisição para o backend
     const response = await axios.put(
-      `${BACKEND_URL}/api/categories/${params.id}`,
+      `${BACKEND_URL}/api/categories/${id}`,
       body,
       {
         headers: {
@@ -50,7 +46,8 @@ export async function PUT(req: NextRequest, { params }: { params: Params }) {
 }
 
 // Deletar uma categoria
-export async function DELETE(req: NextRequest, { params }: { params: Params }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
@@ -59,7 +56,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Params }) {
   try {
     // Fazer proxy da requisição para o backend
     const response = await axios.delete(
-      `${BACKEND_URL}/api/categories/${params.id}`,
+      `${BACKEND_URL}/api/categories/${id}`,
       {
         headers: {
           'Authorization': `Bearer ${token.accessToken}`,
