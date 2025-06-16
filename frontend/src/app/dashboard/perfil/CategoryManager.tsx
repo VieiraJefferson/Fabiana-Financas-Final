@@ -59,6 +59,9 @@ export default function CategoryManager() {
         try {
             setLoading(true);
             const headers = getAuthHeaders();
+            if (!headers) {
+                throw new Error('Usuário não autenticado');
+            }
             const { data } = await axios.get('/api/categories', { headers });
             setCategories(data);
         } catch (error) {
@@ -80,6 +83,10 @@ export default function CategoryManager() {
         }
 
         const headers = getAuthHeaders();
+        if (!headers) {
+            toast.error('Usuário não autenticado');
+            return;
+        }
         const apiCall = currentCategory._id
             ? axios.put(`/api/categories/${currentCategory._id}`, currentCategory, { headers })
             : axios.post('/api/categories', currentCategory, { headers });
@@ -99,6 +106,10 @@ export default function CategoryManager() {
     const handleDeleteCategory = async (id: string) => {
         try {
             const headers = getAuthHeaders();
+            if (!headers) {
+                toast.error('Usuário não autenticado');
+                return;
+            }
             await axios.delete(`/api/categories/${id}`, { headers });
             setCategories(categories.filter((cat) => cat._id !== id));
             toast.success('Categoria removida com sucesso!');
@@ -121,6 +132,10 @@ export default function CategoryManager() {
     const handleAddCategory = async () => {
         try {
             const headers = getAuthHeaders();
+            if (!headers) {
+                toast.error('Usuário não autenticado');
+                return;
+            }
             const { data: newCategory } = await axios.post('/api/categories', { name: newCategoryName }, { headers });
             setCategories([...categories, newCategory]);
             setNewCategoryName('');
