@@ -70,7 +70,17 @@ const helpItems = [
 ];
 
 // Componente de navegação reutilizável para desktop e mobile
-const NavigationLinks = ({ onClick = () => {}, restartTutorial, pathname, session }) => {
+const NavigationLinks = ({ 
+  onClick = () => {}, 
+  restartTutorial, 
+  pathname, 
+  session 
+}: { 
+  onClick?: () => void; 
+  restartTutorial: () => void; 
+  pathname: string; 
+  session: any;
+}) => {
   const router = useRouter();
 
   const handleNavigation = (href: string, e: React.MouseEvent) => {
