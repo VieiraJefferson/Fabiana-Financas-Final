@@ -52,10 +52,10 @@ export function SiteHeader() {
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-9 w-9">
                       <AvatarImage
-                        src={session.user?.image || ""}
+                        src={session.user?.image || undefined}
                         alt={session.user?.name || "Usuário"}
                       />
-                      <AvatarFallback>{getInitials(session.user?.name)}</AvatarFallback>
+                      <AvatarFallback>{getInitials(session.user?.name || "")}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
