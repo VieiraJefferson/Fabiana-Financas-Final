@@ -158,7 +158,7 @@ export default function Home() {
       </main>
 
       <footer className="text-center py-6 text-sm text-gray-500">
-        <p>&copy; {new Date().getFullYear()} Fabi Finanças. Todos os direitos reservados.</p>
+        <p>&copy; {new Date().getFullYear()} VieiraDev. Todos os direitos reservados.</p>
       </footer>
     </div>
   )
