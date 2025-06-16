@@ -7,12 +7,17 @@ declare module "next-auth" {
     user: {
       id: string;
       role: string;
+      isAdmin: boolean;
     } & DefaultSession["user"]; // Mantém os campos padrão (name, email, image)
+    accessToken?: string;
   }
 
   // Estendendo a interface do Usuário
   interface User extends DefaultUser {
+    _id: string;
     role: string;
+    isAdmin: boolean;
+    token: string;
   }
 }
 
@@ -21,5 +26,7 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string;
     role: string;
+    isAdmin: boolean;
+    accessToken: string;
   }
 } 
