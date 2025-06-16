@@ -66,6 +66,9 @@ export default function PerfilPage() {
     try {
       setCategoriesLoading(true);
       const headers = getAuthHeaders();
+      if (!headers) {
+        throw new Error('Usuário não autenticado');
+      }
       const { data } = await axios.get('/api/categories', { headers });
       setCategories(data);
     } catch (error) {
@@ -81,6 +84,10 @@ export default function PerfilPage() {
 
     try {
       const headers = getAuthHeaders();
+      if (!headers) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
       await axios.put("/api/users/profile", { name, email }, { headers });
       await update({ name, email });
       toast.success("Seu perfil foi atualizado.");
@@ -107,6 +114,10 @@ export default function PerfilPage() {
     setPasswordLoading(true);
     try {
       const headers = getAuthHeaders();
+      if (!headers) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
       await axios.put("/api/users/password", { currentPassword, newPassword }, { headers });
       toast.success("Sua senha foi alterada.");
       setCurrentPassword("");
@@ -130,6 +141,10 @@ export default function PerfilPage() {
     setPhotoLoading(true);
     try {
       const headers = getAuthHeaders();
+      if (!headers) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
       const { data } = await axios.post("/api/users/profile/photo", formData, {
         headers: {
           ...headers,
@@ -156,6 +171,10 @@ export default function PerfilPage() {
   const handleDeleteCategory = async (categoryId: string) => {
     try {
       const headers = getAuthHeaders();
+      if (!headers) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
       await axios.delete(`/api/categories/${categoryId}`, { headers });
       toast.success("Categoria excluída com sucesso.");
       fetchCategories();
@@ -175,6 +194,10 @@ export default function PerfilPage() {
 
     try {
       const headers = getAuthHeaders();
+      if (!headers) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
       await axios.post('/api/categories', {
         name: newCategoryName.trim(),
         type: categoryType
