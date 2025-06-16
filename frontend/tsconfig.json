@@ -24,9 +24,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "@/backend/*": [
-        "../backend/*"
       ]
     },
     "target": "ES2017"
