@@ -96,6 +96,33 @@ export default function TestPage() {
     }
   };
 
+  const testMongoConnection = async () => {
+    try {
+      const response = await fetch('/api/test/mongodb', {
+        headers: {
+          'Authorization': `Bearer ${session?.accessToken}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert(`Teste MongoDB bem-sucedido:\n
+Estado da conexão: ${data.mongoState}
+Usuário: ${data.user}
+JWT Secret: ${data.hasJwtSecret ? 'Configurado' : 'Não configurado'}
+Mongo URI: ${data.hasMongoUri ? 'Configurado' : 'Não configurado'}
+Resultado da consulta: ${data.testQueryResult} itens`);
+      } else {
+        alert(`Erro no teste MongoDB: ${data.error}`);
+        console.error('Erro:', data);
+      }
+    } catch (error) {
+      alert(`Erro na requisição: ${error.message}`);
+      console.error('Erro:', error);
+    }
+  };
+
   const clearResults = () => {
     setResults([]);
   };
@@ -130,6 +157,7 @@ export default function TestPage() {
             <Button onClick={testProtectedRoute}>Testar Rota Protegida</Button>
             <Button onClick={testCategoriesRoute}>Testar Categorias</Button>
             <Button onClick={testGoalsRoute}>Testar Metas</Button>
+            <Button onClick={testMongoConnection}>Testar Conexão MongoDB</Button>
             <Button onClick={clearResults} variant="outline">Limpar Resultados</Button>
           </div>
         </CardContent>

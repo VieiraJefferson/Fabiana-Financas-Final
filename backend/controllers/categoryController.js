@@ -51,6 +51,7 @@ const getCategories = asyncHandler(async (req, res) => {
     console.log('=== GET CATEGORIES DEBUG ===');
     console.log('User ID:', req.user?._id);
     console.log('User object:', req.user);
+    console.log('MongoDB connection state:', require('mongoose').connection.readyState);
     
     if (!req.user || !req.user._id) {
       console.error('Usuário não encontrado no request');
@@ -58,11 +59,18 @@ const getCategories = asyncHandler(async (req, res) => {
       throw new Error('Usuário não autenticado');
     }
     
+    console.log('Fazendo consulta no banco de dados...');
     const categories = await Category.find({ user: req.user._id });
     console.log('Categorias encontradas:', categories.length);
+    console.log('Dados das categorias:', categories);
+    
     res.status(200).json(categories);
   } catch (error) {
-    console.error('Erro ao buscar categorias:', error);
+    console.error('Erro detalhado ao buscar categorias:', {
+      message: error.message,
+      stack: error.stack,
+      user: req.user?._id
+    });
     res.status(500);
     throw new Error(`Erro ao buscar categorias: ${error.message}`);
   }
