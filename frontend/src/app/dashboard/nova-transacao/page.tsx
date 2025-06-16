@@ -40,7 +40,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { ICategory } from "@/models/Category";
+
+// Interface para categoria (frontend)
+interface ICategory {
+  _id: string;
+  name: string;
+  type: 'receita' | 'despesa';
+  isDefault?: boolean;
+}
 
 // Categorias predefinidas
 const CATEGORIAS_RECEITA = [
