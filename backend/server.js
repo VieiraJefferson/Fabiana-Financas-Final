@@ -19,7 +19,7 @@ const app = express();
 app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:3000',
-    'https://fabiana-financas.vercel.app', // Substitua pelo seu domínio Vercel
+    'https://fabiana-financas-proj.vercel.app', // Domínio correto do Vercel
     'https://*.vercel.app'
   ];
   
