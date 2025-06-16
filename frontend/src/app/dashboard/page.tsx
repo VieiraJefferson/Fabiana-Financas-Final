@@ -369,7 +369,7 @@ export default function DashboardPage() {
 
   const simulateGoalAchieved = () => {
     toast.success("Parabéns! Você alcançou uma meta! 🎉");
-    analyzeBudgetStatus(mockData.monthlySpent, mockData.monthlyBudget, 100);
+    analyzeBudgetStatus(mockData.monthlySpent, mockData.monthlyBudget);
   };
 
   const simulateBudgetWarning = () => {
