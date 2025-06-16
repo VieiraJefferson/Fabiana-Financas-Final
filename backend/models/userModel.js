@@ -20,10 +20,41 @@ const userSchema = mongoose.Schema(
       type: String,
       required: false,
     },
+    // Sistema de roles mais robusto
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'super_admin'],
+      default: 'user',
+    },
+    // Compatibilidade com o sistema antigo
     isAdmin: {
       type: Boolean,
       required: true,
       default: false,
+    },
+    // Sistema de planos
+    plan: {
+      type: String,
+      enum: ['free', 'premium', 'enterprise'],
+      default: 'free',
+    },
+    planExpiry: {
+      type: Date,
+    },
+    planFeatures: {
+      maxTransactions: { type: Number, default: 100 },
+      maxCategories: { type: Number, default: 10 },
+      maxGoals: { type: Number, default: 3 },
+      hasAdvancedReports: { type: Boolean, default: false },
+      hasVideoAccess: { type: Boolean, default: false },
+    },
+    // Status da conta
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    lastLogin: {
+      type: Date,
     },
   },
   {

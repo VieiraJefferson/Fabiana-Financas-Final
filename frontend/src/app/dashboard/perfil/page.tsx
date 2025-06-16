@@ -138,9 +138,18 @@ export default function PerfilPage() {
     console.log('=== DEBUG UPLOAD FRONTEND ===');
     console.log('Arquivo selecionado:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
-    const formData = new FormData();
-    formData.append("profileImage", file);
-    
+    // Verificar tamanho do arquivo (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 5MB.');
+      return;
+    }
+
+    // Verificar tipo do arquivo
+    if (!file.type.includes('image/')) {
+      toast.error('Por favor, selecione apenas arquivos de imagem.');
+      return;
+    }
+
     setPhotoLoading(true);
     try {
       const headers = getAuthHeaders();
@@ -150,21 +159,39 @@ export default function PerfilPage() {
       }
       
       console.log('Headers de autenticação:', headers);
-      
-      // Não definir Content-Type para FormData - o browser define automaticamente
-      const { data } = await axios.post("/api/users/profile/photo", formData, {
-        headers: headers, // Removi o Content-Type
-      });
 
-      console.log('Resposta do servidor:', data);
-      await update({ image: data.image });
-      toast.success(data.message);
+      // Converter para Base64 diretamente no frontend para evitar problemas de upload
+      const reader = new FileReader();
+      reader.onload = async function(event) {
+        try {
+          const base64 = event.target?.result as string;
+          
+          const response = await axios.post("/api/users/profile", {
+            image: base64
+          }, {
+            headers: {
+              ...headers,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          console.log('Resposta do servidor:', response.data);
+          await update({ image: response.data.user.image });
+          toast.success('Foto de perfil atualizada com sucesso!');
+        } catch (error: any) {
+          console.error('Erro no upload:', error);
+          console.error('Resposta do erro:', error.response?.data);
+          const errorMessage = error.response?.data?.message || "Não foi possível enviar a foto.";
+          toast.error(errorMessage);
+        } finally {
+          setPhotoLoading(false);
+        }
+      };
+
+      reader.readAsDataURL(file);
     } catch (error: any) {
       console.error('Erro no upload:', error);
-      console.error('Resposta do erro:', error.response?.data);
-      const errorMessage = error.response?.data?.message || "Não foi possível enviar a foto.";
-      toast.error(errorMessage);
-    } finally {
+      toast.error('Erro ao processar a imagem.');
       setPhotoLoading(false);
     }
   };

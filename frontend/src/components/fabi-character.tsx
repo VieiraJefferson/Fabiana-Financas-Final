@@ -55,13 +55,19 @@ export function FabiCharacter({
   };
 
   return (
-    <div className={cn("fabi-character-container", className)}>
+    <div className={cn("fabi-character-container flex-shrink-0", className)}>
       <div className="relative cursor-pointer" onClick={onClick}>
-        <div className={cn("relative", sizeClasses[size])}>
+        <div className={cn("relative flex items-center justify-center", sizeClasses[size])}>
           <img 
             src={imageSrc} 
             alt="Fabi - Mentora Financeira" 
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain rounded-full"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+            onError={(e) => {
+              console.log('Erro ao carregar imagem:', imageSrc);
+              // Fallback para imagem padrão
+              (e.target as HTMLImageElement).src = '/fabi-character.png';
+            }}
           />
         </div>
       </div>
@@ -337,11 +343,11 @@ export function FabiBudgetAlert({ budgetStatus, onViewExpenses, onViewReports }:
       <CardContent className="p-3 md:p-6">
         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4">
           {/* Fabi Character - Centralizado no mobile, lado esquerdo no desktop */}
-          <div className="flex flex-shrink-0 justify-center md:justify-start mb-2 md:mb-0">
+          <div className="flex flex-shrink-0 justify-center md:justify-start mb-2 md:mb-0 min-w-fit">
             <FabiCharacter 
               size="medium" 
               imageSrc={getFabiImage()}
-              className="w-12 h-12 md:w-20 md:h-20"
+              className="w-16 h-16 md:w-20 md:h-20 object-contain"
             />
           </div>
           

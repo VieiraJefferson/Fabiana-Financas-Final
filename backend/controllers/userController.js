@@ -85,17 +85,27 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
-
-    // A lógica de alteração de senha será tratada separadamente.
-    // Por enquanto, esta rota atualiza apenas nome e e-mail.
+    
+    // Se uma imagem Base64 foi enviada, atualizar a imagem
+    if (req.body.image) {
+      console.log('📷 Atualizando imagem de perfil via PUT');
+      console.log('📝 Tamanho do Base64:', req.body.image.length, 'caracteres');
+      user.image = req.body.image;
+    }
 
     const updatedUser = await user.save();
 
     res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      isAdmin: updatedUser.isAdmin,
+      message: 'Perfil atualizado com sucesso!',
+      user: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        image: updatedUser.image,
+        isAdmin: updatedUser.isAdmin,
+        role: updatedUser.role,
+        plan: updatedUser.plan,
+      },
       token: generateToken(updatedUser._id), // Retorna um novo token com os dados atualizados
     });
   } else {
@@ -143,45 +153,66 @@ const updateUserProfilePhoto = asyncHandler(async (req, res) => {
     console.log('User ID:', req.user?.id);
     console.log('File info:', req.file);
     console.log('Body:', req.body);
+    console.log('Headers:', req.headers);
     
-    const user = await User.findById(req.user.id);
-
-    if (user) {
-      if (req.file) {
-        console.log('Arquivo recebido:', req.file.originalname, req.file.size, 'bytes');
-        
-        // Converter para Base64 para compatibilidade com Render
-        const fs = require('fs');
-        const imageBuffer = fs.readFileSync(req.file.path);
-        const base64Image = `data:${req.file.mimetype};base64,${imageBuffer.toString('base64')}`;
-        
-        // Salvar como Base64 no banco
-        user.image = base64Image;
-        const updatedUser = await user.save();
-        
-        // Limpar o arquivo temporário
-        fs.unlinkSync(req.file.path);
-        
-        console.log('Foto salva como Base64 com sucesso');
-        
-        res.json({
-          message: 'Foto de perfil atualizada com sucesso!',
-          image: updatedUser.image,
-        });
-      } else {
-        console.log('Nenhum arquivo encontrado no request');
-        res.status(400);
-        throw new Error('Nenhum arquivo de imagem foi enviado.');
-      }
-    } else {
-      console.log('Usuário não encontrado');
-      res.status(404);
-      throw new Error('Usuário não encontrado.');
+    if (!req.file) {
+      console.log('❌ Nenhum arquivo encontrado no request');
+      return res.status(400).json({
+        message: 'Nenhum arquivo de imagem foi enviado.'
+      });
     }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      console.log('❌ Usuário não encontrado');
+      return res.status(404).json({
+        message: 'Usuário não encontrado.'
+      });
+    }
+
+    console.log('✅ Arquivo recebido:', req.file.originalname, req.file.size, 'bytes');
+    console.log('📂 Caminho do arquivo:', req.file.path);
+    
+    // Converter para Base64 para compatibilidade com Render
+    const fs = require('fs');
+    
+    // Verificar se o arquivo existe
+    if (!fs.existsSync(req.file.path)) {
+      console.log('❌ Arquivo não encontrado no caminho:', req.file.path);
+      return res.status(500).json({
+        message: 'Erro interno: arquivo não encontrado.'
+      });
+    }
+    
+    const imageBuffer = fs.readFileSync(req.file.path);
+    const base64Image = `data:${req.file.mimetype};base64,${imageBuffer.toString('base64')}`;
+    
+    console.log('📝 Tamanho do Base64:', base64Image.length, 'caracteres');
+    
+    // Salvar como Base64 no banco
+    user.image = base64Image;
+    const updatedUser = await user.save();
+    
+    // Limpar o arquivo temporário
+    try {
+      fs.unlinkSync(req.file.path);
+      console.log('🧹 Arquivo temporário removido');
+    } catch (unlinkError) {
+      console.log('⚠️ Erro ao remover arquivo temporário:', unlinkError.message);
+    }
+    
+    console.log('✅ Foto salva como Base64 com sucesso');
+    
+    res.json({
+      message: 'Foto de perfil atualizada com sucesso!',
+      image: updatedUser.image,
+    });
+    
   } catch (error) {
-    console.error('Erro no upload da foto:', error);
-    res.status(500);
-    throw new Error(`Erro no upload: ${error.message}`);
+    console.error('❌ Erro no upload da foto:', error);
+    res.status(500).json({
+      message: `Erro no upload: ${error.message}`
+    });
   }
 });
 

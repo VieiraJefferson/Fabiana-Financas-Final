@@ -9,12 +9,28 @@ const storage = multer.diskStorage({
     // Usar diretório temporário do sistema para compatibilidade com Render
     const uploadDir = path.join(os.tmpdir(), 'uploads');
     
+    console.log('=== MULTER DESTINATION DEBUG ===');
+    console.log('Diretório de upload:', uploadDir);
+    console.log('OS tmpdir:', os.tmpdir());
+    
     // Garante que o diretório temporário exista
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+        console.log('✅ Diretório criado:', uploadDir);
+      } else {
+        console.log('✅ Diretório já existe:', uploadDir);
+      }
+      
+      // Verificar permissões de escrita
+      fs.accessSync(uploadDir, fs.constants.W_OK);
+      console.log('✅ Permissões de escrita OK');
+      
+    } catch (error) {
+      console.error('❌ Erro ao criar/acessar diretório:', error);
+      return cb(error, null);
     }
     
-    console.log('Upload directory:', uploadDir);
     cb(null, uploadDir);
   },
   filename(req, file, cb) {
