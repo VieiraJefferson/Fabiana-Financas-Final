@@ -337,11 +337,11 @@ export function FabiBudgetAlert({ budgetStatus, onViewExpenses, onViewReports }:
       <CardContent className="p-3 md:p-6">
         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4">
           {/* Fabi Character - Centralizado no mobile, lado esquerdo no desktop */}
-          <div className="flex flex-shrink-0 justify-center md:justify-start">
+          <div className="flex flex-shrink-0 justify-center md:justify-start mb-2 md:mb-0">
             <FabiCharacter 
-              size="large" 
+              size="medium" 
               imageSrc={getFabiImage()}
-              className="w-16 h-16 md:w-20 md:h-20"
+              className="w-12 h-12 md:w-20 md:h-20"
             />
           </div>
           

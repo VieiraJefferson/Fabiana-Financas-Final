@@ -1,17 +1,20 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 // Configuração do armazenamento
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    const uploadDir = 'uploads/';
+    // Usar diretório temporário do sistema para compatibilidade com Render
+    const uploadDir = path.join(os.tmpdir(), 'uploads');
     
-    // Garante que o diretório 'uploads/' exista
+    // Garante que o diretório temporário exista
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     
+    console.log('Upload directory:', uploadDir);
     cb(null, uploadDir);
   },
   filename(req, file, cb) {
@@ -37,7 +40,17 @@ function checkFileType(file, cb) {
 // Inicialização do multer com as configurações
 const upload = multer({
   storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
   fileFilter: function (req, file, cb) {
+    console.log('=== DEBUG MULTER FILTER ===');
+    console.log('File info:', {
+      fieldname: file.fieldname,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
     checkFileType(file, cb);
   },
 });

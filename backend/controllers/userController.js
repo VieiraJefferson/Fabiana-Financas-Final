@@ -148,11 +148,21 @@ const updateUserProfilePhoto = asyncHandler(async (req, res) => {
 
     if (user) {
       if (req.file) {
-        console.log('Arquivo recebido:', req.file.path);
-        // O caminho do arquivo é adicionado pelo middleware multer
-        user.image = `/${req.file.path.replace(/\\/g, "/")}`; // Garante barras compatíveis com URL
+        console.log('Arquivo recebido:', req.file.originalname, req.file.size, 'bytes');
+        
+        // Converter para Base64 para compatibilidade com Render
+        const fs = require('fs');
+        const imageBuffer = fs.readFileSync(req.file.path);
+        const base64Image = `data:${req.file.mimetype};base64,${imageBuffer.toString('base64')}`;
+        
+        // Salvar como Base64 no banco
+        user.image = base64Image;
         const updatedUser = await user.save();
-        console.log('Foto salva com sucesso:', updatedUser.image);
+        
+        // Limpar o arquivo temporário
+        fs.unlinkSync(req.file.path);
+        
+        console.log('Foto salva como Base64 com sucesso');
         
         res.json({
           message: 'Foto de perfil atualizada com sucesso!',

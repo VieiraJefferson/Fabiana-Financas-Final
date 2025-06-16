@@ -699,14 +699,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Alerta de Orçamento */}
-          {budgetStatus && budgetStatus.status !== 'safe' && (
-            <FabiBudgetAlert
-              budgetStatus={budgetStatus}
-              onViewExpenses={() => router.push('/dashboard/transacoes')}
-              onViewReports={() => router.push('/dashboard/relatorios')}
-            />
-          )}
+
 
           {/* Cards de Estatísticas - Desktop */}
           <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -759,6 +752,15 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Alerta de Orçamento - Responsivo */}
+          {budgetStatus && budgetStatus.status !== 'safe' && (
+            <FabiBudgetAlert
+              budgetStatus={budgetStatus}
+              onViewExpenses={() => router.push('/dashboard/transacoes')}
+              onViewReports={() => router.push('/dashboard/relatorios')}
+            />
+          )}
 
           {/* Mobile Quick Actions Grid - Redesigned like the reference */}
           <div className="md:hidden space-y-4">
@@ -824,16 +826,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Alerta de Orçamento - Mobile */}
-            {budgetStatus && budgetStatus.status !== 'safe' && (
-              <div>
-                <FabiBudgetAlert
-                  budgetStatus={budgetStatus}
-                  onViewExpenses={() => router.push('/dashboard/transacoes')}
-                  onViewReports={() => router.push('/dashboard/relatorios')}
-                />
-              </div>
-            )}
+
 
             {/* Seção de Ações Rápidas */}
             <div>

@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // API Proxy - Redirect API calls to backend (exceto NextAuth)
+  // API Proxy - Redirect API calls to backend (exceto NextAuth e users que precisam de proxy)
   async rewrites() {
     const backendUrl = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
     return [
       {
-        source: '/api/:path((?!auth).*)*',
+        source: '/api/:path((?!auth|users).*)*',
         destination: `${backendUrl}/api/:path*`,
       },
     ];

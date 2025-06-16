@@ -135,6 +135,9 @@ export default function PerfilPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('=== DEBUG UPLOAD FRONTEND ===');
+    console.log('Arquivo selecionado:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
+
     const formData = new FormData();
     formData.append("profileImage", file);
     
@@ -145,16 +148,20 @@ export default function PerfilPage() {
         toast.error('Usuário não autenticado');
         return;
       }
+      
+      console.log('Headers de autenticação:', headers);
+      
+      // Não definir Content-Type para FormData - o browser define automaticamente
       const { data } = await axios.post("/api/users/profile/photo", formData, {
-        headers: {
-          ...headers,
-          "Content-Type": "multipart/form-data",
-        },
+        headers: headers, // Removi o Content-Type
       });
 
+      console.log('Resposta do servidor:', data);
       await update({ image: data.image });
       toast.success(data.message);
     } catch (error: any) {
+      console.error('Erro no upload:', error);
+      console.error('Resposta do erro:', error.response?.data);
       const errorMessage = error.response?.data?.message || "Não foi possível enviar a foto.";
       toast.error(errorMessage);
     } finally {
