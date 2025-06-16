@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -58,9 +58,9 @@ export default function AdminPage() {
     }
 
     fetchAdminStats();
-  }, [session, status, router]);
+  }, [session, status, router, fetchAdminStats]);
 
-  const fetchAdminStats = async () => {
+  const fetchAdminStats = useCallback(async () => {
     try {
       const response = await axios.get('/api/admin/dashboard', {
         headers: {
@@ -74,7 +74,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.accessToken]);
 
   if (status === 'loading' || loading) {
     return (
