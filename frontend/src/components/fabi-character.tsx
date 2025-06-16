@@ -329,17 +329,19 @@ export function FabiBudgetAlert({ budgetStatus, onViewExpenses, onViewReports }:
     <Card className={cn(
       "border-2",
       budgetStatus.status === 'danger' 
-        ? "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-500/20" 
-        : "border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-500/20"
+        ? "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-500/20 md:bg-red-50 md:dark:bg-red-900/10" 
+        : "border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-500/20 md:bg-yellow-50 md:dark:bg-yellow-900/10",
+      // Remove background on mobile
+      "max-md:bg-transparent max-md:dark:bg-transparent max-md:border-0"
     )}>
-      <CardContent className="p-6">
+      <CardContent className="p-3 md:p-6">
         <div className="flex flex-col md:flex-row items-center gap-4">
-          {/* Fabi Character */}
-          <div className="flex-shrink-0">
+          {/* Fabi Character - Centered on mobile */}
+          <div className="flex-shrink-0 mx-auto md:mx-0">
             <FabiCharacter 
               size="large" 
               imageSrc={getFabiImage()}
-              className="w-20 h-20 md:w-24 md:h-24"
+              className="w-16 h-16 md:w-24 md:h-24"
             />
           </div>
           

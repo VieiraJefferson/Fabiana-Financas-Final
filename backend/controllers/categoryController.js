@@ -47,8 +47,25 @@ const createCategory = asyncHandler(async (req, res) => {
 // @route   GET /api/categories
 // @access  Private
 const getCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.find({ user: req.user._id });
-  res.status(200).json(categories);
+  try {
+    console.log('=== GET CATEGORIES DEBUG ===');
+    console.log('User ID:', req.user?._id);
+    console.log('User object:', req.user);
+    
+    if (!req.user || !req.user._id) {
+      console.error('Usuário não encontrado no request');
+      res.status(401);
+      throw new Error('Usuário não autenticado');
+    }
+    
+    const categories = await Category.find({ user: req.user._id });
+    console.log('Categorias encontradas:', categories.length);
+    res.status(200).json(categories);
+  } catch (error) {
+    console.error('Erro ao buscar categorias:', error);
+    res.status(500);
+    throw new Error(`Erro ao buscar categorias: ${error.message}`);
+  }
 });
 
 // @desc    Atualizar uma categoria
