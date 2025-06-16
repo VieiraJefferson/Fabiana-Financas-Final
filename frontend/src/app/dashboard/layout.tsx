@@ -292,7 +292,7 @@ export default function DashboardLayout({
                 <img 
                   src="/logo3.png" 
                   alt="Fabi Finanças" 
-                  className="h-20 w-auto"
+                  className="h-24 w-auto"
                 />
               </div>
             </SheetHeader>
@@ -413,20 +413,18 @@ export default function DashboardLayout({
           onComplete={completeTutorial}
         />
 
-        {/* Fabi Assistant */}
-        <FabiAssistant 
-          context={
-            pathname.includes('/transacoes') ? 'transactions' :
-            pathname.includes('/metas') ? 'goals' :
-            pathname.includes('/conteudo') ? 'content' :
-            'dashboard'
-          }
-          className={
-            pathname.includes('/transacoes') ? 'bottom-24 md:bottom-6 right-3 md:right-6' :
-            pathname.includes('/dashboard') && !pathname.includes('/transacoes') ? 'bottom-24 md:bottom-6 right-3 md:right-6' :
-            'bottom-24 md:bottom-6 right-3 md:right-6'
-          }
-        />
+        {/* Fabi Assistant - Oculto no mobile */}
+        <div className="hidden md:block">
+          <FabiAssistant 
+            context={
+              pathname.includes('/transacoes') ? 'transactions' :
+              pathname.includes('/metas') ? 'goals' :
+              pathname.includes('/conteudo') ? 'content' :
+              'dashboard'
+            }
+            className="bottom-6 right-6"
+          />
+        </div>
 
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />

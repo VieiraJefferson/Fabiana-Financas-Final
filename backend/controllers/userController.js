@@ -138,24 +138,40 @@ const updateUserPassword = asyncHandler(async (req, res) => {
 // @route   POST /api/users/profile/photo
 // @access  Private
 const updateUserProfilePhoto = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id);
+  try {
+    console.log('=== DEBUG UPLOAD FOTO ===');
+    console.log('User ID:', req.user?.id);
+    console.log('File info:', req.file);
+    console.log('Body:', req.body);
+    
+    const user = await User.findById(req.user.id);
 
-  if (user) {
-    if (req.file) {
-      // O caminho do arquivo é adicionado pelo middleware multer
-      user.image = `/${req.file.path.replace(/\\/g, "/")}`; // Garante barras compatíveis com URL
-      const updatedUser = await user.save();
-      res.json({
-        message: 'Foto de perfil atualizada com sucesso!',
-        image: updatedUser.image,
-      });
+    if (user) {
+      if (req.file) {
+        console.log('Arquivo recebido:', req.file.path);
+        // O caminho do arquivo é adicionado pelo middleware multer
+        user.image = `/${req.file.path.replace(/\\/g, "/")}`; // Garante barras compatíveis com URL
+        const updatedUser = await user.save();
+        console.log('Foto salva com sucesso:', updatedUser.image);
+        
+        res.json({
+          message: 'Foto de perfil atualizada com sucesso!',
+          image: updatedUser.image,
+        });
+      } else {
+        console.log('Nenhum arquivo encontrado no request');
+        res.status(400);
+        throw new Error('Nenhum arquivo de imagem foi enviado.');
+      }
     } else {
-      res.status(400);
-      throw new Error('Nenhum arquivo de imagem foi enviado.');
+      console.log('Usuário não encontrado');
+      res.status(404);
+      throw new Error('Usuário não encontrado.');
     }
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado.');
+  } catch (error) {
+    console.error('Erro no upload da foto:', error);
+    res.status(500);
+    throw new Error(`Erro no upload: ${error.message}`);
   }
 });
 

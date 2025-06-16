@@ -1,12 +1,18 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 // Configuração do armazenamento
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    // Garante que o diretório 'uploads/' exista.
-    // O ideal seria criar este diretório manualmente ou com um script na inicialização.
-    cb(null, 'uploads/'); // Salva os arquivos na pasta 'uploads'
+    const uploadDir = 'uploads/';
+    
+    // Garante que o diretório 'uploads/' exista
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
   },
   filename(req, file, cb) {
     // Define um nome de arquivo único para evitar colisões
