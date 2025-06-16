@@ -6,8 +6,9 @@ const API_URL = process.env.BACKEND_URL || 'http://localhost:5001';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
@@ -17,7 +18,7 @@ export async function PATCH(
     const body = await req.json();
     
     // Fazer requisição para o backend
-    const response = await fetch(`${API_URL}/api/goals/${params.id}/progress`, {
+    const response = await fetch(`${API_URL}/api/goals/${id}/progress`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
