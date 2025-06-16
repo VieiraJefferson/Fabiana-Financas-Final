@@ -268,7 +268,7 @@ export default function DashboardLayout({
               <div className="flex items-center">
                 <Avatar className="h-8 w-8">
                   <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
-                    {session?.user?.name?.charAt(0).toUpperCase()}
+                    {(session?.user?.name || "U").charAt(0).toUpperCase()}
                   </div>
                 </Avatar>
                 <div className="ml-3 flex-1 min-w-0">
@@ -310,7 +310,7 @@ export default function DashboardLayout({
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8">
                     <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
-                      {session?.user?.name?.charAt(0).toUpperCase()}
+                      {(session?.user?.name || "U").charAt(0).toUpperCase()}
                     </div>
                   </Avatar>
                   <div className="ml-3 flex-1 min-w-0">
@@ -358,7 +358,7 @@ export default function DashboardLayout({
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
                       <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
-                        {session?.user?.name?.charAt(0).toUpperCase()}
+                        {(session?.user?.name || "U").charAt(0).toUpperCase()}
                       </div>
                     </Avatar>
                   </Button>
