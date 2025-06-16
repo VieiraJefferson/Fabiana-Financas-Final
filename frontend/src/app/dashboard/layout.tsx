@@ -292,7 +292,7 @@ export default function DashboardLayout({
                 <img 
                   src="/logo3.png" 
                   alt="Fabi Finanças" 
-                  className="h-10 w-auto"
+                  className="h-20 w-auto"
                 />
               </div>
             </SheetHeader>

@@ -99,7 +99,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="container mx-auto px-6 py-10 text-center">
         <h1 className="text-5xl font-extrabold text-gray-900">
-          Bem-vinda ao Fabi Finanças
+          Bem-vindo ao Fabi Finanças
         </h1>
         <p className="mt-4 text-lg text-gray-600">
           Sua jornada para a liberdade financeira começa aqui. Controle, planeje e alcance seus objetivos.
