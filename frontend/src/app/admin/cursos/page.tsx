@@ -331,23 +331,23 @@ export default function AdminCursosPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
         <div>
-          <h1 className="text-2xl font-bold">Gerenciar Cursos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl lg:text-2xl font-bold">Gerenciar Cursos</h1>
+          <p className="text-sm lg:text-base text-muted-foreground">
             Crie e gerencie cursos com múltiplos vídeos
           </p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full lg:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Novo Curso
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCourse ? 'Editar Curso' : 'Criar Novo Curso'}
@@ -358,7 +358,7 @@ export default function AdminCursosPage() {
             </DialogHeader>
             
             <form onSubmit={handleCreateCourse} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Título do Curso</Label>
                   <Input
@@ -390,7 +390,7 @@ export default function AdminCursosPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="level">Nível</Label>
                   <Select
@@ -452,11 +452,11 @@ export default function AdminCursosPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <div className="flex flex-col lg:flex-row justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full lg:w-auto">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} className="w-full lg:w-auto">
                   {loading ? 'Criando...' : editingCourse ? 'Atualizar' : 'Criar Curso'}
                 </Button>
               </div>
@@ -470,15 +470,17 @@ export default function AdminCursosPage() {
         {courses.map((course) => (
           <Card key={course._id} className="overflow-hidden">
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-xl">{course.title}</CardTitle>
-                    {getLevelBadge(course.level)}
-                    {getStatusBadge(course.status)}
+              <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start">
+                <div className="space-y-2 flex-1">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-2">
+                    <CardTitle className="text-lg lg:text-xl">{course.title}</CardTitle>
+                    <div className="flex gap-2">
+                      {getLevelBadge(course.level)}
+                      {getStatusBadge(course.status)}
+                    </div>
                   </div>
-                  <CardDescription>{course.description}</CardDescription>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <CardDescription className="text-sm">{course.description}</CardDescription>
+                  <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <BookOpen className="h-4 w-4" />
                       {course.videosCount} vídeos
@@ -494,7 +496,7 @@ export default function AdminCursosPage() {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full lg:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
@@ -502,9 +504,10 @@ export default function AdminCursosPage() {
                       setSelectedCourse(course);
                       setIsVideoDialogOpen(true);
                     }}
+                    className="flex-1 lg:flex-none"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Vídeo
+                    <span className="hidden sm:inline">Adicionar </span>Vídeo
                   </Button>
                   
                   <Button
@@ -513,11 +516,15 @@ export default function AdminCursosPage() {
                     onClick={() => {
                       setExpandedCourse(expandedCourse === course._id ? null : course._id);
                     }}
+                    className="lg:flex-none"
                   >
                     {expandedCourse === course._id ? 
                       <ChevronUp className="h-4 w-4" /> : 
                       <ChevronDown className="h-4 w-4" />
                     }
+                    <span className="hidden sm:inline ml-1">
+                      {expandedCourse === course._id ? 'Ocultar' : 'Mostrar'}
+                    </span>
                   </Button>
                 </div>
               </div>

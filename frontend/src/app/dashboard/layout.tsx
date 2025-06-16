@@ -32,6 +32,7 @@ import { FabiTutorial } from "@/components/fabi-character";
 import { FabiAssistant } from "@/components/fabi-assistant";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { useFabiTutorial } from "@/hooks/use-fabi-tutorial";
+import { useLogout } from "@/hooks/useLogout";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { 
   LayoutDashboard, 
@@ -193,6 +194,16 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [userImage, setUserImage] = useState<string | null>(null);
+  const { logout } = useLogout();
+  
+  // Função personalizada para logout completo (usando o hook)
+  const handleLogout = async () => {
+    // Limpar cache local
+    setUserImage(null);
+    
+    // Usar o hook de logout
+    await logout();
+  };
   
   // Buscar imagem do usuário diretamente do backend
   const fetchUserImage = async () => {
@@ -384,7 +395,7 @@ export default function DashboardLayout({
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    onClick={handleLogout}
                     className="ml-2"
                   >
                     <LogOut className="h-4 w-4 text-red-500" />
@@ -450,7 +461,7 @@ export default function DashboardLayout({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })} className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer">
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sair</span>
                   </DropdownMenuItem>

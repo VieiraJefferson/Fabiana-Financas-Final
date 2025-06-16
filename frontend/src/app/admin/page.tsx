@@ -94,21 +94,21 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 lg:px-6 py-4 lg:py-6">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 lg:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <ShieldCheck className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">Painel de Administração</h1>
+          <ShieldCheck className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Painel de Administração</h1>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-sm lg:text-base text-muted-foreground">
           Gerencie usuários, conteúdo e configurações do Fabi Finanças
         </p>
       </div>
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6 lg:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Usuários Totais</CardTitle>
@@ -165,7 +165,7 @@ export default function AdminPage() {
 
       {/* Distribuição por Planos */}
       {stats && stats.usersByPlan.length > 0 && (
-        <Card className="mb-8">
+        <Card className="mb-6 lg:mb-8">
           <CardHeader>
             <CardTitle>Distribuição por Planos</CardTitle>
             <CardDescription>
@@ -186,7 +186,7 @@ export default function AdminPage() {
 
       {/* Navigation Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="videos">Vídeos</TabsTrigger>
@@ -195,7 +195,7 @@ export default function AdminPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

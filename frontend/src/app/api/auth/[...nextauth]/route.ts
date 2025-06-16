@@ -62,23 +62,36 @@ const handler = NextAuth({
   pages: {
     signIn: '/login',
   },
+  session: {
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 horas
+  },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // Se for signOut, limpa tudo
+      if (trigger === "signOut") {
+        return {};
+      }
+      
       if (user) {
         console.log('🔑 JWT Callback - User recebido:', {
           _id: user._id,
           name: user.name,
           email: user.email,
           hasImage: !!user.image,
-          imageSize: user.image ? user.image.length : 0
+          imageSize: user.image ? user.image.length : 0,
+          isAdmin: user.isAdmin
         });
         token.id = user._id;
         token.name = user.name;
         token.email = user.email;
-        token.image = user.image; // ← Incluindo a imagem no token
+        token.image = user.image;
         token.isAdmin = user.isAdmin;
         token.accessToken = user.token;
-        console.log('🔑 JWT Callback - Token criado com image:', !!token.image);
+        console.log('🔑 JWT Callback - Token criado:', { 
+          hasImage: !!token.image, 
+          isAdmin: token.isAdmin 
+        });
       }
       return token;
     },
