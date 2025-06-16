@@ -68,11 +68,6 @@ const handler = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, trigger }) {
-      // Se for signOut, limpa tudo
-      if (trigger === "signOut") {
-        return {};
-      }
-      
       if (user) {
         console.log('🔑 JWT Callback - User recebido:', {
           _id: user._id,

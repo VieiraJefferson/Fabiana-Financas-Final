@@ -119,13 +119,17 @@ export default function AdminPlansPage() {
     
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      setEditingPlan({
-        ...editingPlan,
-        [parent]: {
-          ...editingPlan[parent as keyof Plan],
-          [child]: value
-        }
-      });
+      const parentValue = editingPlan[parent as keyof Plan];
+      
+      if (parentValue && typeof parentValue === 'object') {
+        setEditingPlan({
+          ...editingPlan,
+          [parent]: {
+            ...parentValue,
+            [child]: value
+          }
+        });
+      }
     } else {
       setEditingPlan({
         ...editingPlan,

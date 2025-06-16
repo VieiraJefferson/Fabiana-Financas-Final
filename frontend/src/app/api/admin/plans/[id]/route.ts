@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt';
 
 const API_URL = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   
   if (!token) {
@@ -11,9 +11,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
+    const { id } = await params;
     const body = await req.json();
     
-    const response = await fetch(`${API_URL}/api/admin/plans/${params.id}`, {
+    const response = await fetch(`${API_URL}/api/admin/plans/${id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token.accessToken}`,

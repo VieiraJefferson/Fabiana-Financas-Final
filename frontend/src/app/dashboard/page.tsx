@@ -176,9 +176,10 @@ export default function DashboardPage() {
       if (false) { // Desabilitado para melhorar performance
         setFinancialData({
           saldo: 0,
-          receitas: 0,
-          despesas: 0,
-          transacoes: []
+          totalReceitas: 0,
+          totalDespesas: 0,
+          transacoesReceitas: 0,
+          transacoesDespesas: 0
         });
         setLoading(false);
       }
@@ -407,7 +408,7 @@ export default function DashboardPage() {
     
     // Fallback para orçamento padrão se não houver orçamentos configurados
     const monthlyBudget = 3000;
-    const currentSpent = financialData.despesas;
+    const currentSpent = financialData.totalDespesas;
     const percentage = (currentSpent / monthlyBudget) * 100;
     const remaining = monthlyBudget - currentSpent;
     
@@ -424,22 +425,20 @@ export default function DashboardPage() {
   const exportToCSV = (data: FinancialData, period: string) => {
     const csvContent = [
       // Cabeçalho
-      ['Tipo', 'Descrição', 'Valor', 'Data', 'Categoria'].join(','),
-      // Dados das transações
-      ...(data.transacoes || []).map(t => [
-        t.tipo,
-        `"${t.descricao}"`,
-        t.valor.toString(),
-        t.data,
-        `"${t.categoria}"`
-      ].join(','))
+      ['Descrição', 'Valor'].join(','),
+      // Dados dos resumos
+      ['Saldo Total', data.saldo.toString()].join(','),
+      ['Total de Receitas', data.totalReceitas.toString()].join(','),
+      ['Total de Despesas', data.totalDespesas.toString()].join(','),
+      ['Número de Receitas', data.transacoesReceitas.toString()].join(','),
+      ['Número de Despesas', data.transacoesDespesas.toString()].join(',')
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `fabiana-financas-${period}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `fabiana-financas-resumo-${period}-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -476,34 +475,11 @@ export default function DashboardPage() {
         <div class="summary">
           <h3>Resumo Financeiro</h3>
           <p><strong>Saldo Total:</strong> R$ ${data.saldo.toFixed(2).replace('.', ',')}</p>
-          <p><strong>Total de Receitas:</strong> R$ ${data.receitas.toFixed(2).replace('.', ',')}</p>
-          <p><strong>Total de Despesas:</strong> R$ ${data.despesas.toFixed(2).replace('.', ',')}</p>
-          <p><strong>Total de Transações:</strong> ${(data.transacoes || []).length}</p>
+          <p><strong>Total de Receitas:</strong> R$ ${data.totalReceitas.toFixed(2).replace('.', ',')}</p>
+          <p><strong>Total de Despesas:</strong> R$ ${data.totalDespesas.toFixed(2).replace('.', ',')}</p>
+          <p><strong>Número de Transações de Receita:</strong> ${data.transacoesReceitas}</p>
+          <p><strong>Número de Transações de Despesa:</strong> ${data.transacoesDespesas}</p>
         </div>
-
-        <h3>Detalhamento das Transações</h3>
-        <table class="transactions">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(data.transacoes || []).map(t => `
-              <tr>
-                <td>${new Date(t.data).toLocaleDateString('pt-BR')}</td>
-                <td class="${t.tipo}">${t.tipo === 'receita' ? 'Receita' : 'Despesa'}</td>
-                <td>${t.descricao}</td>
-                <td>${t.categoria}</td>
-                <td class="${t.tipo}">R$ ${t.valor.toFixed(2).replace('.', ',')}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
 
         <div class="footer">
           <p>Relatório gerado automaticamente pelo sistema Fabiana Finanças</p>
@@ -528,7 +504,7 @@ export default function DashboardPage() {
 
   // Handlers para exportação
   const handleExportCSV = () => {
-    if (!financialData || !financialData.transacoes || financialData.transacoes.length === 0) {
+    if (!financialData) {
       toast.error("Não há dados para exportar");
       return;
     }
@@ -538,11 +514,11 @@ export default function DashboardPage() {
                        filters.period === 'this-year' ? 'este-ano' : 'personalizado';
     
     exportToCSV(financialData, periodLabel);
-    toast.success("Dados exportados para CSV com sucesso! 📊");
+    toast.success("Resumo financeiro exportado para CSV com sucesso! 📊");
   };
 
   const handleExportPDF = () => {
-    if (!financialData || !financialData.transacoes || financialData.transacoes.length === 0) {
+    if (!financialData) {
       toast.error("Não há dados para exportar");
       return;
     }
@@ -552,7 +528,7 @@ export default function DashboardPage() {
                        filters.period === 'this-year' ? 'Este Ano' : 'Período Personalizado';
     
     exportToPDF(financialData, periodLabel);
-    toast.success("Relatório PDF gerado com sucesso! 📄");
+    toast.success("Resumo financeiro em PDF gerado com sucesso! 📄");
   };
 
   return (
@@ -580,14 +556,14 @@ export default function DashboardPage() {
                 <ArrowUpCircle className="h-4 w-4 text-green-300 flex-shrink-0" />
                 <span className="opacity-80">Receitas:</span>
                 <span className="font-semibold text-green-300 truncate">
-                  {formatCurrency(displayData.receitas)}
+                  {formatCurrency(displayData.totalReceitas)}
                 </span>
               </div>
               <div className="flex items-center justify-center gap-1">
                 <ArrowDownCircle className="h-4 w-4 text-red-300 flex-shrink-0" />
                 <span className="opacity-80">Despesas:</span>
                 <span className="font-semibold text-red-300 truncate">
-                  {formatCurrency(displayData.despesas)}
+                  {formatCurrency(displayData.totalDespesas)}
                 </span>
               </div>
             </div>
@@ -720,7 +696,7 @@ export default function DashboardPage() {
                 <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">+{formatCurrency(displayData.receitas)}</div>
+                <div className="text-2xl font-bold text-green-600">+{formatCurrency(displayData.totalReceitas)}</div>
                 <p className="text-xs text-muted-foreground">Total de entradas</p>
               </CardContent>
             </Card>
@@ -731,7 +707,7 @@ export default function DashboardPage() {
                 <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">-{formatCurrency(displayData.despesas)}</div>
+                <div className="text-2xl font-bold text-red-600">-{formatCurrency(displayData.totalDespesas)}</div>
                 <p className="text-xs text-muted-foreground">Total de saídas</p>
               </CardContent>
             </Card>
@@ -743,8 +719,8 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {displayData.receitas > 0
-                    ? `${Math.round((displayData.saldo / displayData.receitas) * 100)}%`
+                  {displayData.totalReceitas > 0
+                    ? `${Math.round((displayData.saldo / displayData.totalReceitas) * 100)}%`
                     : '0%'
                   }
                 </div>
@@ -783,8 +759,8 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                          {displayData.receitas > 0
-                            ? `${Math.round((displayData.saldo / displayData.receitas) * 100)}%`
+                          {displayData.totalReceitas > 0
+                            ? `${Math.round((displayData.saldo / displayData.totalReceitas) * 100)}%`
                             : '0%'
                           }
                         </p>
@@ -803,7 +779,7 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-xs text-green-700 dark:text-green-300 mb-1">Receitas</p>
                         <p className="text-lg font-bold text-green-600 dark:text-green-400 truncate">
-                          {formatCurrency(displayData.receitas)}
+                          {formatCurrency(displayData.totalReceitas)}
                         </p>
                       </div>
                     </CardContent>
@@ -817,7 +793,7 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-xs text-red-700 dark:text-red-300 mb-1">Despesas</p>
                         <p className="text-lg font-bold text-red-600 dark:text-red-400 truncate">
-                          {formatCurrency(displayData.despesas)}
+                          {formatCurrency(displayData.totalDespesas)}
                         </p>
                       </div>
                     </CardContent>
@@ -1056,68 +1032,27 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!displayData.transacoes || displayData.transacoes.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-                    <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                    Nenhuma transação encontrada
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Comece adicionando sua primeira transação
-                  </p>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                  <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                  Transações Detalhadas
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Para ver suas transações detalhadas, acesse a página de transações
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
                   <Button onClick={handleNavigateToNewTransaction} className="w-full sm:w-auto">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Adicionar Transação
                   </Button>
+                  <Button variant="outline" onClick={handleNavigateToTransactions} className="w-full sm:w-auto">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Ver Todas
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {displayData.transacoes.slice(0, 5).map((transacao) => (
-                    <div key={transacao.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                      <div className="flex-shrink-0">
-                        <div className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center",
-                          transacao.tipo === 'receita' 
-                            ? "bg-green-100 dark:bg-green-900/20" 
-                            : "bg-red-100 dark:bg-red-900/20"
-                        )}>
-                          {getTransactionIcon(transacao.tipo, transacao.categoria)}
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium text-sm truncate pr-2">{transacao.descricao}</p>
-                          <p className={cn(
-                            "font-bold text-sm flex-shrink-0",
-                            transacao.tipo === 'receita' ? "text-green-600" : "text-red-600"
-                          )}>
-                            {transacao.tipo === 'receita' ? '+' : '-'}{formatCurrency(transacao.valor)}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-muted-foreground truncate pr-2">
-                            {transacao.categoria}
-                          </p>
-                          <p className="text-xs text-muted-foreground flex-shrink-0">
-                            {formatDate(transacao.data)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="pt-2 md:hidden">
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={handleNavigateToTransactions}
-                    >
-                      Ver Todas as Transações
-                    </Button>
-                  </div>
-                </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 
@@ -1144,9 +1079,10 @@ export default function DashboardPage() {
                     // Simular orçamento seguro (50% usado)
                     const mockSafeData = { 
                       saldo: 1500, 
-                      receitas: 3000, 
-                      despesas: 1500, 
-                      transacoes: [] 
+                      totalReceitas: 3000, 
+                      totalDespesas: 1500, 
+                      transacoesReceitas: 5,
+                      transacoesDespesas: 3
                     };
                     setFinancialData(mockSafeData);
                     toast.success("Simulando orçamento seguro - Fabi feliz! 😊");
@@ -1158,9 +1094,10 @@ export default function DashboardPage() {
                     // Simular orçamento no limite (85% usado)
                     const mockWarningData = { 
                       saldo: 450, 
-                      receitas: 3000, 
-                      despesas: 2550, 
-                      transacoes: [] 
+                      totalReceitas: 3000, 
+                      totalDespesas: 2550, 
+                      transacoesReceitas: 4,
+                      transacoesDespesas: 8
                     };
                     setFinancialData(mockWarningData);
                     toast.warning("Simulando orçamento no limite - Fabi preocupada! 🤔");
@@ -1172,9 +1109,10 @@ export default function DashboardPage() {
                     // Simular orçamento estourado (120% usado)
                     const mockDangerData = { 
                       saldo: -600, 
-                      receitas: 3000, 
-                      despesas: 3600, 
-                      transacoes: [] 
+                      totalReceitas: 3000, 
+                      totalDespesas: 3600, 
+                      transacoesReceitas: 3,
+                      transacoesDespesas: 12
                     };
                     setFinancialData(mockDangerData);
                     toast.error("Simulando orçamento estourado - Fabi muito triste! 😟");

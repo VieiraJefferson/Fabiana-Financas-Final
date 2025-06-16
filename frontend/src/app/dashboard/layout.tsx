@@ -313,15 +313,6 @@ export default function DashboardLayout({
             <div className="border-t p-4">
               <div className="flex items-center">
                 <Avatar className="h-8 w-8">
-                  {console.log('🖼️ Dashboard Layout Avatar Debug:', {
-                    sessionExists: !!session,
-                    userExists: !!session?.user,
-                    sessionImageExists: !!session?.user?.image,
-                    backendImageExists: !!userImage,
-                    sessionImageUrl: session?.user?.image || 'N/A',
-                    backendImageUrl: userImage || 'N/A',
-                    finalImageUrl: userImage || session?.user?.image || 'N/A'
-                  })}
                   <AvatarImage src={userImage || session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
                   <AvatarFallback>
                     {(session?.user?.name || "U").charAt(0).toUpperCase()}

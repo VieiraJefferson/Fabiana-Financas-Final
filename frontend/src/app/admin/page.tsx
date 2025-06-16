@@ -37,6 +37,22 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchAdminStats = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/admin/dashboard', {
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+      });
+      setStats(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+      toast.error('Erro ao carregar dados do dashboard');
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.accessToken]);
+
   // Verificar se o usuário é admin
   useEffect(() => {
     if (status === 'loading') return;
@@ -59,22 +75,6 @@ export default function AdminPage() {
 
     fetchAdminStats();
   }, [session, status, router, fetchAdminStats]);
-
-  const fetchAdminStats = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/admin/dashboard', {
-        headers: {
-          Authorization: `Bearer ${session?.accessToken}`,
-        },
-      });
-      setStats(response.data);
-    } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error);
-      toast.error('Erro ao carregar dados do dashboard');
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.accessToken]);
 
   if (status === 'loading' || loading) {
     return (

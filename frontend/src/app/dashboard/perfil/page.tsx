@@ -326,13 +326,6 @@ export default function PerfilPage() {
               <CardContent className="space-y-6">
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                   <div className="relative group">
-                    {console.log('🖼️ Avatar Debug:', {
-                      sessionExists: !!session,
-                      userExists: !!session?.user,
-                      sessionImage: !!session?.user?.image,
-                      currentUserImage: !!currentUserImage,
-                      imageUrl: currentUserImage || session?.user?.image || 'N/A'
-                    })}
                     <Avatar className="h-24 w-24 md:h-32 md:w-32">
                       <AvatarImage src={currentUserImage || session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
                       <AvatarFallback>
