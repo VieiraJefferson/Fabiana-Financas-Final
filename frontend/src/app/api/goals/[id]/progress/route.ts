@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // URL do backend
-const API_URL = process.env.BACKEND_URL || 'http://localhost:5001';
+const API_URL = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
 
 export async function PATCH(
   req: NextRequest,
