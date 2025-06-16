@@ -2,10 +2,11 @@
 const nextConfig = {
   // API Proxy - Redirect API calls to backend
   async rewrites() {
+    const backendUrl = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5001/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
