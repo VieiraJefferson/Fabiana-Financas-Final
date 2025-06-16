@@ -852,7 +852,7 @@ export default function MetasPage() {
                   id="titulo"
                   placeholder="Ex: Comprar um carro"
                   value={editingMeta?.title || ''}
-                  onChange={(e) => setEditingMeta(prev => ({...prev, title: e.target.value}))}
+                  onChange={(e) => setEditingMeta(prev => prev ? {...prev, title: e.target.value} : null)}
                   required
                 />
               </div>
@@ -863,14 +863,14 @@ export default function MetasPage() {
                   id="descricao"
                   placeholder="Descreva sua meta..."
                   value={editingMeta?.description || ''}
-                  onChange={(e) => setEditingMeta(prev => ({...prev, description: e.target.value}))}
+                  onChange={(e) => setEditingMeta(prev => prev ? {...prev, description: e.target.value} : null)}
                   required
                 />
               </div>
 
               <div className="grid w-full gap-2">
                 <Label htmlFor="tipo">Tipo</Label>
-                <Select value={editingMeta?.type || ''} onValueChange={(value) => setEditingMeta(prev => ({...prev, type: value as 'economia' | 'investimento' | 'divida' | 'compra' | 'aposentadoria'}))}>
+                <Select value={editingMeta?.type || ''} onValueChange={(value) => setEditingMeta(prev => prev ? {...prev, type: value as 'economia' | 'investimento' | 'divida' | 'compra' | 'aposentadoria'} : null)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -891,7 +891,7 @@ export default function MetasPage() {
                   type="number"
                   placeholder="0,00"
                   value={editingMeta?.targetAmount.toString() || ''}
-                  onChange={(e) => setEditingMeta(prev => ({...prev, targetAmount: parseFloat(e.target.value)}))}
+                  onChange={(e) => setEditingMeta(prev => prev ? {...prev, targetAmount: parseFloat(e.target.value)} : null)}
                   required
                 />
               </div>
@@ -903,7 +903,7 @@ export default function MetasPage() {
                   type="number"
                   placeholder="0,00"
                   value={editingMeta?.currentAmount.toString() || ''}
-                  onChange={(e) => setEditingMeta(prev => ({...prev, currentAmount: parseFloat(e.target.value)}))}
+                  onChange={(e) => setEditingMeta(prev => prev ? {...prev, currentAmount: parseFloat(e.target.value)} : null)}
                 />
               </div>
 
@@ -913,14 +913,14 @@ export default function MetasPage() {
                   id="prazo"
                   type="date"
                   value={editingMeta?.deadline.split('T')[0] || ''}
-                  onChange={(e) => setEditingMeta(prev => ({...prev, deadline: e.target.value}))}
+                  onChange={(e) => setEditingMeta(prev => prev ? {...prev, deadline: e.target.value} : null)}
                   required
                 />
               </div>
 
               <div className="grid w-full gap-2">
                 <Label htmlFor="prioridade">Prioridade</Label>
-                <Select value={editingMeta?.priority || ''} onValueChange={(value) => setEditingMeta(prev => ({...prev, priority: value as 'baixa' | 'media' | 'alta'}))}>
+                <Select value={editingMeta?.priority || ''} onValueChange={(value) => setEditingMeta(prev => prev ? {...prev, priority: value as 'baixa' | 'media' | 'alta'} : null)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a prioridade" />
                   </SelectTrigger>
