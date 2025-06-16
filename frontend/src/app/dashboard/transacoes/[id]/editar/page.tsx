@@ -97,6 +97,11 @@ export default function EditarTransacaoPage() {
         setError("");
 
         const headers = getAuthHeaders();
+        if (!headers) {
+          setError("Usuário não autenticado.");
+          setLoading(false);
+          return;
+        }
         const response = await axios.get(`/api/transactions/${transactionId}`, { headers });
 
         const transaction: Transaction = response.data;
@@ -173,6 +178,11 @@ export default function EditarTransacaoPage() {
       setSuccess("");
 
       const headers = getAuthHeaders();
+      if (!headers) {
+        setError("Usuário não autenticado.");
+        setSubmitting(false);
+        return;
+      }
 
       const payload = {
         type: formData.type,
