@@ -5,13 +5,18 @@ import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
-import { X, ChevronLeft, ChevronRight, BarChart3, PieChart } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart3, PieChart } from "lucide-react";
 
 interface FabiCharacterProps {
   size?: "small" | "medium" | "large";
   className?: string;
   onClick?: () => void;
   imageSrc?: string;
+  animation?: string;
+  showSpeechBubble?: boolean;
+  speechText?: string;
+  disableAnimation?: boolean;
 }
 
 interface TutorialStep {
@@ -33,7 +38,16 @@ interface FabiModalProps {
   onClose: () => void;
 }
 
-export function FabiCharacter({ size = "medium", className, onClick, imageSrc = "/fabi-character.png" }: FabiCharacterProps) {
+export function FabiCharacter({ 
+  size = "medium", 
+  className, 
+  onClick, 
+  imageSrc = "/fabi-character.png",
+  animation,
+  showSpeechBubble,
+  speechText,
+  disableAnimation
+}: FabiCharacterProps) {
   const sizeClasses = {
     small: "w-16 h-16",
     medium: "w-24 h-24", 
