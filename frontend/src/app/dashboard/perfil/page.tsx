@@ -16,8 +16,6 @@ import CategoryManager from "./CategoryManager";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import UpdatePasswordForm from "./UpdatePasswordForm";
-import UpdateProfileForm from "./UpdateProfileForm";
 import { toast } from "sonner";
 
 interface Category {
