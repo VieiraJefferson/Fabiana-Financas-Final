@@ -37,22 +37,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  console.log('=== DEBUG CATEGORIES API ROUTE ===');
-  console.log('NEXTAUTH_BACKEND_URL:', process.env.NEXTAUTH_BACKEND_URL);
-  console.log('API_URL:', API_URL);
-  
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  console.log('Token exists:', !!token);
-  console.log('Token accessToken:', token?.accessToken ? 'Present' : 'Missing');
   
   if (!token) {
-    console.log('No token found - returning 401');
     return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
   }
 
   try {
     const backendUrl = `${API_URL}/api/categories`;
-    console.log('Fetching from backend:', backendUrl);
     
     // Fazer requisição para o backend
     const response = await fetch(backendUrl, {

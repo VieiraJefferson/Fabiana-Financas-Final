@@ -331,46 +331,46 @@ export function FabiBudgetAlert({ budgetStatus, onViewExpenses, onViewReports }:
       budgetStatus.status === 'danger' 
         ? "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-500/20 md:bg-red-50 md:dark:bg-red-900/10" 
         : "border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-500/20 md:bg-yellow-50 md:dark:bg-yellow-900/10",
-      // Remove background on mobile
-      "max-md:bg-transparent max-md:dark:bg-transparent max-md:border-0"
+      // Remove background and border on mobile, add centering
+      "max-md:bg-transparent max-md:dark:bg-transparent max-md:border-0 max-md:shadow-none"
     )}>
       <CardContent className="p-3 md:p-6">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          {/* Fabi Character - Centered on mobile */}
-          <div className="flex-shrink-0 mx-auto md:mx-0">
+        <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4">
+          {/* Fabi Character - Hidden on mobile, visible on desktop */}
+          <div className="hidden md:flex flex-shrink-0">
             <FabiCharacter 
               size="large" 
               imageSrc={getFabiImage()}
-              className="w-16 h-16 md:w-24 md:h-24"
+              className="w-20 h-20 md:w-24 md:h-24"
             />
           </div>
           
           {/* Message Content */}
           <div className="flex-1 text-center md:text-left">
             <h3 className={cn(
-              "text-xl font-bold mb-2",
+              "text-lg md:text-xl font-bold mb-2",
               budgetStatus.status === 'danger' 
                 ? "text-red-700 dark:text-red-300" 
                 : "text-yellow-700 dark:text-yellow-300"
             )}>
               {getTitle()}
             </h3>
-            <p className="text-muted-foreground mb-4 leading-relaxed">
+            <p className="text-sm md:text-base text-muted-foreground mb-3 md:mb-4 leading-relaxed">
               {getFabiMessage()}
             </p>
             
             {/* Budget Progress */}
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-2 mb-3 md:mb-4">
+              <div className="flex justify-between text-xs md:text-sm">
                 <span className="text-muted-foreground">Gasto do mês</span>
-                <span className="font-medium">
+                <span className="font-medium text-xs md:text-sm">
                   R$ {budgetStatus.spent.toFixed(2).replace('.', ',')} / R$ {budgetStatus.budget.toFixed(2).replace('.', ',')}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
+              <div className="w-full bg-gray-200 rounded-full h-2 md:h-3 dark:bg-gray-700">
                 <div 
                   className={cn(
-                    "h-3 rounded-full transition-all duration-300",
+                    "h-2 md:h-3 rounded-full transition-all duration-300",
                     budgetStatus.status === 'danger' 
                       ? "bg-red-500" 
                       : "bg-yellow-500"
@@ -380,10 +380,10 @@ export function FabiBudgetAlert({ budgetStatus, onViewExpenses, onViewReports }:
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{budgetStatus.percentage.toFixed(1)}% usado</span>
-                <span>
+                <span className="text-right">
                   {budgetStatus.remaining >= 0 
                     ? `R$ ${budgetStatus.remaining.toFixed(2).replace('.', ',')} restante`
-                    : `R$ ${Math.abs(budgetStatus.remaining).toFixed(2).replace('.', ',')} acima do limite`
+                    : `R$ ${Math.abs(budgetStatus.remaining).toFixed(2).replace('.', ',')} acima`
                   }
                 </span>
               </div>
@@ -394,19 +394,19 @@ export function FabiBudgetAlert({ budgetStatus, onViewExpenses, onViewReports }:
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex-1"
+                className="flex-1 h-8 md:h-9 text-xs md:text-sm"
                 onClick={onViewExpenses}
               >
-                <BarChart3 className="mr-2 h-4 w-4" />
+                <BarChart3 className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                 Ver Gastos
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex-1"
+                className="flex-1 h-8 md:h-9 text-xs md:text-sm"
                 onClick={onViewReports}
               >
-                <PieChart className="mr-2 h-4 w-4" />
+                <PieChart className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                 Relatórios
               </Button>
             </div>
