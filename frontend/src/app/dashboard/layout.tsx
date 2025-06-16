@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -192,7 +192,36 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [userImage, setUserImage] = useState<string | null>(null);
   
+  // Buscar imagem do usuário diretamente do backend
+  const fetchUserImage = async () => {
+    try {
+      if (!session?.accessToken) return;
+      
+      const response = await fetch('http://localhost:5001/api/users/profile', {
+        headers: {
+          'Authorization': `Bearer ${session.accessToken}`,
+        },
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('🔍 Layout - Imagem buscada do backend:', userData.image || 'SEM IMAGEM');
+        setUserImage(userData.image || null);
+      }
+    } catch (error) {
+      console.error('❌ Layout - Erro ao buscar imagem:', error);
+    }
+  };
+
+  // Buscar imagem quando a sessão estiver disponível
+  useEffect(() => {
+    if (session?.accessToken) {
+      fetchUserImage();
+    }
+  }, [session?.accessToken]);
+
   // Fabi Tutorial
   const {
     isVisible: tutorialVisible,
@@ -228,6 +257,13 @@ export default function DashboardLayout({
     setIsOpen(false);
   }, [pathname]);
 
+  // Redirecionamento de usuários não autenticados
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -237,7 +273,6 @@ export default function DashboardLayout({
   }
 
   if (status === "unauthenticated") {
-    router.push("/login");
     return null;
   }
 
@@ -267,14 +302,31 @@ export default function DashboardLayout({
             <div className="border-t p-4">
               <div className="flex items-center">
                 <Avatar className="h-8 w-8">
-                  <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
+                  {console.log('🖼️ Dashboard Layout Avatar Debug:', {
+                    sessionExists: !!session,
+                    userExists: !!session?.user,
+                    sessionImageExists: !!session?.user?.image,
+                    backendImageExists: !!userImage,
+                    sessionImageUrl: session?.user?.image || 'N/A',
+                    backendImageUrl: userImage || 'N/A',
+                    finalImageUrl: userImage || session?.user?.image || 'N/A'
+                  })}
+                  <AvatarImage src={userImage || session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
+                  <AvatarFallback>
                     {(session?.user?.name || "U").charAt(0).toUpperCase()}
-                  </div>
+                  </AvatarFallback>
                 </Avatar>
                 <div className="ml-3 flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {session?.user?.name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {session?.user?.name}
+                    </p>
+                    {session?.user?.isAdmin && (
+                      <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded-full">
+                        ADMIN
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">
                     {session?.user?.email}
                   </p>
@@ -309,14 +361,22 @@ export default function DashboardLayout({
               <div className="border-t p-4 mt-auto">
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8">
-                    <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
+                    <AvatarImage src={userImage || session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
+                    <AvatarFallback>
                       {(session?.user?.name || "U").charAt(0).toUpperCase()}
-                    </div>
+                    </AvatarFallback>
                   </Avatar>
                   <div className="ml-3 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {session?.user?.name}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {session?.user?.name}
+                      </p>
+                      {session?.user?.isAdmin && (
+                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded-full">
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {session?.user?.email}
                     </p>
@@ -357,18 +417,26 @@ export default function DashboardLayout({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
+                      <AvatarImage src={userImage || session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
+                      <AvatarFallback>
                         {(session?.user?.name || "U").charAt(0).toUpperCase()}
-                      </div>
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none truncate">
-                        {session?.user?.name}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium leading-none truncate">
+                          {session?.user?.name}
+                        </p>
+                        {session?.user?.isAdmin && (
+                          <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded-full">
+                            ADMIN
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground leading-none truncate">
                         {session?.user?.email}
                       </p>

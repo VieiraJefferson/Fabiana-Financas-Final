@@ -96,9 +96,10 @@ interface Transaction {
 
 interface FinancialData {
   saldo: number;
-  receitas: number;
-  despesas: number;
-  transacoes: Transaction[];
+  totalReceitas: number;
+  totalDespesas: number;
+  transacoesReceitas: number;
+  transacoesDespesas: number;
 }
 
 export default function DashboardPage() {
@@ -351,21 +352,19 @@ export default function DashboardPage() {
     }
     return {
       saldo: financialData.saldo,
-      receitas: financialData.receitas,
-      despesas: financialData.despesas,
-      economyRate: financialData.receitas > 0 
-        ? Math.round((financialData.saldo / financialData.receitas) * 100)
+      receitas: financialData.totalReceitas,
+      despesas: financialData.totalDespesas,
+      economyRate: financialData.totalReceitas > 0 
+        ? Math.round((financialData.saldo / financialData.totalReceitas) * 100)
         : 0
     };
   }, [financialData]);
 
-  // Memoized recent transactions
+  // Para transações recentes, usaremos uma lista vazia por enquanto
+  // TODO: Criar uma chamada separada para buscar transações recentes se necessário
   const recentTransactions = useMemo(() => {
-    if (!financialData || !financialData.transacoes) return [];
-    return financialData.transacoes
-      .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
-      .slice(0, 5);
-  }, [financialData]);
+    return [];
+  }, []);
 
   const simulateGoalAchieved = () => {
     toast.success("Parabéns! Você alcançou uma meta! 🎉");
@@ -385,9 +384,10 @@ export default function DashboardPage() {
   // Se não temos dados, mostrar dados padrão
   const displayData = financialData || {
     saldo: 0,
-    receitas: 0,
-    despesas: 0,
-    transacoes: []
+    totalReceitas: 0,
+    totalDespesas: 0,
+    transacoesReceitas: 0,
+    transacoesDespesas: 0
   };
 
   // Função para calcular status do orçamento (memoizada)

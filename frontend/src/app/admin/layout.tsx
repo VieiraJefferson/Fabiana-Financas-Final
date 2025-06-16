@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,11 @@ const adminNavigation = [
     name: "Vídeos",
     href: "/admin/videos",
     icon: "🎥",
+  },
+  {
+    name: "Cursos",
+    href: "/admin/cursos",
+    icon: "📚",
   },
   {
     name: "Planos",
@@ -131,9 +136,10 @@ export default function AdminLayout({
           <div className="border-t p-4">
             <div className="flex items-center">
               <Avatar className="h-8 w-8">
-                <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
+                <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
+                <AvatarFallback>
                   {(session?.user?.name || "A").charAt(0).toUpperCase()}
-                </div>
+                </AvatarFallback>
               </Avatar>
               <div className="ml-3 flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
@@ -170,9 +176,10 @@ export default function AdminLayout({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
+                      <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
+                      <AvatarFallback>
                         {(session?.user?.name || "A").charAt(0).toUpperCase()}
-                      </div>
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>

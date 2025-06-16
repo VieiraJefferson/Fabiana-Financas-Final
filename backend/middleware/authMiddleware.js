@@ -41,4 +41,14 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { protect }; 
+// Middleware para verificar se o usuário é admin
+const admin = (req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    next();
+  } else {
+    res.status(403);
+    throw new Error('Acesso negado. Apenas administradores.');
+  }
+};
+
+module.exports = { protect, admin }; 

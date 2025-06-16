@@ -33,9 +33,17 @@ const handler = NextAuth({
           
           console.log('Response status:', response.status);
           console.log('Response data:', response.data);
+          console.log('📷 NextAuth - Image recebida:', response.data.image ? `Base64 com ${response.data.image.length} chars` : 'SEM IMAGEM');
           
           const user = response.data;
           if (user) {
+            console.log('📤 NextAuth - User retornado:', {
+              _id: user._id,
+              name: user.name,
+              email: user.email,
+              hasImage: !!user.image,
+              imageSize: user.image ? user.image.length : 0
+            });
             return user;
           } else {
             return null;
@@ -57,21 +65,33 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log('🔑 JWT Callback - User recebido:', {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          hasImage: !!user.image,
+          imageSize: user.image ? user.image.length : 0
+        });
         token.id = user._id;
         token.name = user.name;
         token.email = user.email;
+        token.image = user.image; // ← Incluindo a imagem no token
         token.isAdmin = user.isAdmin;
         token.accessToken = user.token;
+        console.log('🔑 JWT Callback - Token criado com image:', !!token.image);
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
+        console.log('👤 Session Callback - Token recebido com image:', !!token.image);
         session.user.id = token.id as string;
         session.user.name = token.name as string;
         session.user.email = token.email as string;
+        session.user.image = token.image as string; // ← Incluindo a imagem na sessão
         session.user.isAdmin = token.isAdmin as boolean;
         session.accessToken = token.accessToken as string;
+        console.log('👤 Session Callback - Session criada com image:', !!session.user.image);
       }
       return session;
     }

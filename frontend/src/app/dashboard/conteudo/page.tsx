@@ -60,9 +60,17 @@ export default function ConteudoPage() {
 
   // Simular plano do usuário - em produção viria da API
   const [userPlan, setUserPlan] = useState<UserPlan>({
-    type: 'basic', // Pode ser 'basic', 'advanced', 'premium'
+    type: session?.user?.isAdmin ? 'premium' : 'basic', // Admin tem acesso premium
     expiresAt: '2024-12-31'
   });
+
+  // Atualizar plano quando a sessão mudar
+  useEffect(() => {
+    setUserPlan({
+      type: session?.user?.isAdmin ? 'premium' : 'basic',
+      expiresAt: '2024-12-31'
+    });
+  }, [session]);
 
   // Dados mockados - substituir por dados reais da API
   const [videos, setVideos] = useState<Video[]>([

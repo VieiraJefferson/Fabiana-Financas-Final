@@ -40,6 +40,7 @@ export default function PerfilPage() {
   const [photoLoading, setPhotoLoading] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [currentUserImage, setCurrentUserImage] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
@@ -51,10 +52,30 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchUserProfile = async () => {
+    try {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+      
+      console.log('🔍 Buscando perfil do backend...');
+      const response = await axios.get('http://localhost:5001/api/users/profile', { headers });
+      console.log('🔍 Perfil do usuário buscado:', response.data);
+      
+      if (response.data.image) {
+        setCurrentUserImage(response.data.image);
+        console.log('🖼️ Imagem encontrada no perfil:', response.data.image);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar perfil:', error);
+    }
+  };
+
   useEffect(() => {
     if (session) {
       setName(session.user?.name ?? "");
       setEmail(session.user?.email ?? "");
+      setCurrentUserImage(session.user?.image || null);
+      fetchUserProfile(); // Buscar dados atualizados do backend
     }
   }, [session]);
 
@@ -135,8 +156,8 @@ export default function PerfilPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    console.log('=== DEBUG UPLOAD FRONTEND ===');
-    console.log('Arquivo selecionado:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
+    console.log('📷 === UPLOAD SIMPLES ===');
+    console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
     // Verificar tamanho do arquivo (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -157,41 +178,50 @@ export default function PerfilPage() {
         toast.error('Usuário não autenticado');
         return;
       }
+
+      // FormData é MUITO mais simples!
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      console.log('📤 Enviando FormData DIRETAMENTE para backend...');
       
-      console.log('Headers de autenticação:', headers);
+      console.log('🔗 URL BACKEND DIRETO:', `http://localhost:5001/api/users/profile/photo`);
+      
+      const response = await axios.post(`http://localhost:5001/api/users/profile/photo`, formData, {
+        headers: {
+          ...headers,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-      // Converter para Base64 diretamente no frontend para evitar problemas de upload
-      const reader = new FileReader();
-      reader.onload = async function(event) {
-        try {
-          const base64 = event.target?.result as string;
-          
-          const response = await axios.post("/api/users/profile", {
-            image: base64
-          }, {
-            headers: {
-              ...headers,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          console.log('Resposta do servidor:', response.data);
-          await update({ image: response.data.user.image });
-          toast.success('Foto de perfil atualizada com sucesso!');
-        } catch (error: any) {
-          console.error('Erro no upload:', error);
-          console.error('Resposta do erro:', error.response?.data);
-          const errorMessage = error.response?.data?.message || "Não foi possível enviar a foto.";
-          toast.error(errorMessage);
-        } finally {
-          setPhotoLoading(false);
-        }
-      };
-
-      reader.readAsDataURL(file);
+      console.log('✅ Upload concluído:', response.data);
+      console.log('📊 Response status:', response.status);
+      console.log('🖼️ Nova URL da imagem:', response.data.image);
+      
+      // Atualizar estado local imediatamente
+      setCurrentUserImage(response.data.image);
+      
+      // Atualizar sessão com a nova URL da imagem
+      console.log('🔄 Atualizando sessão...');
+      await update({ image: response.data.image });
+      
+      // Forçar revalidação completa da sessão
+      console.log('🔄 Forçando revalidação completa da sessão...');
+      await fetchUserProfile(); // Recarregar dados do backend
+      
+      // Pequeno delay e depois forçar reload para garantir que a navbar seja atualizada
+      setTimeout(() => {
+        console.log('🔄 Recarregando página para atualizar navbar...');
+        window.location.reload();
+      }, 1000);
+      
+      toast.success('Foto de perfil atualizada com sucesso!');
+      
     } catch (error: any) {
-      console.error('Erro no upload:', error);
-      toast.error('Erro ao processar a imagem.');
+      console.error('❌ Erro no upload:', error);
+      const errorMessage = error.response?.data?.message || "Não foi possível enviar a foto.";
+      toast.error(errorMessage);
+    } finally {
       setPhotoLoading(false);
     }
   };
@@ -296,8 +326,15 @@ export default function PerfilPage() {
               <CardContent className="space-y-6">
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                   <div className="relative group">
+                    {console.log('🖼️ Avatar Debug:', {
+                      sessionExists: !!session,
+                      userExists: !!session?.user,
+                      sessionImage: !!session?.user?.image,
+                      currentUserImage: !!currentUserImage,
+                      imageUrl: currentUserImage || session?.user?.image || 'N/A'
+                    })}
                     <Avatar className="h-24 w-24 md:h-32 md:w-32">
-                      <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
+                      <AvatarImage src={currentUserImage || session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
                       <AvatarFallback>
                         <User className="h-12 w-12" />
                       </AvatarFallback>

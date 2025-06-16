@@ -30,6 +30,65 @@ export default function MentoriaPage() {
 
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
+  // Se for admin, mostrar acesso total
+  if (session?.user?.isAdmin) {
+    return (
+      <div className="p-6 space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Painel Administrativo - Mentoria
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Como administrador, você tem acesso completo a todas as funcionalidades de mentoria
+          </p>
+        </div>
+
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-primary">Acesso Administrativo Total</CardTitle>
+            <CardDescription>
+              Você tem privilégios de administrador e acesso irrestrito a todos os recursos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <h3 className="font-semibold">Recursos Disponíveis:</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✅ Controle total de transações</li>
+                  <li>✅ Relatórios avançados ilimitados</li>
+                  <li>✅ Gerenciamento de usuários</li>
+                  <li>✅ Análise de dados completa</li>
+                  <li>✅ Configurações do sistema</li>
+                  <li>✅ Suporte prioritário</li>
+                </ul>
+              </div>
+              <div className="space-y-3">
+                <h3 className="font-semibold">Ferramentas Admin:</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✅ Painel de cursos</li>
+                  <li>✅ Upload de vídeos</li>
+                  <li>✅ Gestão de conteúdo</li>
+                  <li>✅ Métricas avançadas</li>
+                  <li>✅ Backup de dados</li>
+                  <li>✅ Logs do sistema</li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex gap-4 justify-center">
+              <Button onClick={() => router.push('/admin')} className="w-40">
+                Painel Admin
+              </Button>
+              <Button onClick={() => router.push('/admin/cursos')} variant="outline" className="w-40">
+                Gerenciar Cursos
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const plans: Plan[] = [
     {
       id: 'basic',

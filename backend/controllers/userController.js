@@ -23,13 +23,24 @@ const authUser = asyncHandler(async (req, res) => {
     
     if (passwordMatch) {
       console.log('Login bem-sucedido!');
-      res.json({
+      console.log('📷 Image do usuário:', user.image ? `Base64 com ${user.image.length} chars` : 'SEM IMAGEM');
+      const responseData = {
         _id: user._id,
         name: user.name,
         email: user.email,
+        image: user.image, // ← Incluindo a imagem no login
         isAdmin: user.isAdmin,
         token: generateToken(user._id),
+      };
+      console.log('📤 Dados enviados no login:', {
+        _id: responseData._id,
+        name: responseData.name,
+        email: responseData.email,
+        hasImage: !!responseData.image,
+        imageSize: responseData.image ? responseData.image.length : 0,
+        isAdmin: responseData.isAdmin
       });
+      res.json(responseData);
     } else {
       console.log('Senha incorreta!');
       res.status(401);
@@ -66,12 +77,43 @@ const registerUser = asyncHandler(async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      image: user.image, // ← Incluindo a imagem no registro
       isAdmin: user.isAdmin,
       token: generateToken(user._id),
     });
   } else {
     res.status(400);
     throw new Error('Dados de usuário inválidos');
+  }
+});
+
+// @desc    Buscar perfil do usuário
+// @route   GET /api/users/profile
+// @access  Private
+const getUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  if (user) {
+    console.log('🔍 Perfil encontrado:', {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      hasImage: !!user.image,
+      imageUrl: user.image
+    });
+    
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      isAdmin: user.isAdmin,
+      role: user.role,
+      plan: user.plan,
+    });
+  } else {
+    res.status(404);
+    throw new Error('Usuário não encontrado');
   }
 });
 
@@ -86,11 +128,12 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     
-    // Se uma imagem Base64 foi enviada, atualizar a imagem
+    // Imagem deve ser enviada via POST /api/users/profile/photo
+    // Não aceitar mais image via PUT para forçar uso do Cloudinary
     if (req.body.image) {
-      console.log('📷 Atualizando imagem de perfil via PUT');
-      console.log('📝 Tamanho do Base64:', req.body.image.length, 'caracteres');
-      user.image = req.body.image;
+      console.log('❌ Upload de imagem via PUT não permitido. Use POST /api/users/profile/photo');
+      res.status(400);
+      throw new Error('Para upload de imagem, use a rota POST /api/users/profile/photo');
     }
 
     const updatedUser = await user.save();
@@ -149,14 +192,9 @@ const updateUserPassword = asyncHandler(async (req, res) => {
 // @access  Private
 const updateUserProfilePhoto = asyncHandler(async (req, res) => {
   try {
-    console.log('=== DEBUG UPLOAD FOTO ===');
-    console.log('User ID:', req.user?.id);
-    console.log('File info:', req.file);
-    console.log('Body:', req.body);
-    console.log('Headers:', req.headers);
+    console.log('📷 === UPLOAD CLOUDINARY ===');
     
     if (!req.file) {
-      console.log('❌ Nenhum arquivo encontrado no request');
       return res.status(400).json({
         message: 'Nenhum arquivo de imagem foi enviado.'
       });
@@ -164,52 +202,39 @@ const updateUserProfilePhoto = asyncHandler(async (req, res) => {
 
     const user = await User.findById(req.user.id);
     if (!user) {
-      console.log('❌ Usuário não encontrado');
       return res.status(404).json({
         message: 'Usuário não encontrado.'
       });
     }
 
-    console.log('✅ Arquivo recebido:', req.file.originalname, req.file.size, 'bytes');
-    console.log('📂 Caminho do arquivo:', req.file.path);
+    const cloudinary = require('../config/cloudinary');
     
-    // Converter para Base64 para compatibilidade com Render
-    const fs = require('fs');
+    console.log('☁️ Enviando para Cloudinary...');
     
-    // Verificar se o arquivo existe
-    if (!fs.existsSync(req.file.path)) {
-      console.log('❌ Arquivo não encontrado no caminho:', req.file.path);
-      return res.status(500).json({
-        message: 'Erro interno: arquivo não encontrado.'
-      });
-    }
+    // Upload direto para Cloudinary - MUITO MAIS SIMPLES!
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'fabiana-financas/profile-photos',
+      transformation: [
+        { width: 200, height: 200, crop: 'fill' }, // Redimensiona automaticamente
+        { quality: 'auto' } // Otimiza qualidade automaticamente
+      ]
+    });
+
+    console.log('✅ Upload concluído:', result.secure_url);
     
-    const imageBuffer = fs.readFileSync(req.file.path);
-    const base64Image = `data:${req.file.mimetype};base64,${imageBuffer.toString('base64')}`;
+    // Salvar apenas a URL (muito mais simples!)
+    user.image = result.secure_url;
+    await user.save();
     
-    console.log('📝 Tamanho do Base64:', base64Image.length, 'caracteres');
-    
-    // Salvar como Base64 no banco
-    user.image = base64Image;
-    const updatedUser = await user.save();
-    
-    // Limpar o arquivo temporário
-    try {
-      fs.unlinkSync(req.file.path);
-      console.log('🧹 Arquivo temporário removido');
-    } catch (unlinkError) {
-      console.log('⚠️ Erro ao remover arquivo temporário:', unlinkError.message);
-    }
-    
-    console.log('✅ Foto salva como Base64 com sucesso');
+    console.log('✅ URL salva no banco:', result.secure_url);
     
     res.json({
       message: 'Foto de perfil atualizada com sucesso!',
-      image: updatedUser.image,
+      image: result.secure_url
     });
     
   } catch (error) {
-    console.error('❌ Erro no upload da foto:', error);
+    console.error('❌ Erro no upload:', error);
     res.status(500).json({
       message: `Erro no upload: ${error.message}`
     });
@@ -219,6 +244,7 @@ const updateUserProfilePhoto = asyncHandler(async (req, res) => {
 module.exports = { 
   registerUser, 
   authUser, 
+  getUserProfile,
   updateUserProfile, 
   updateUserPassword,
   updateUserProfilePhoto,
