@@ -263,7 +263,7 @@ export default function PerfilPage() {
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                   <div className="relative group">
                     <Avatar className="h-24 w-24 md:h-32 md:w-32">
-                      <AvatarImage src={session?.user?.image} alt={session?.user?.name ?? ""} />
+                      <AvatarImage src={session?.user?.image || undefined} alt={session?.user?.name ?? ""} />
                       <AvatarFallback>
                         <User className="h-12 w-12" />
                       </AvatarFallback>
