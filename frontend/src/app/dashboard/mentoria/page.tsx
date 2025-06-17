@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,24 +11,45 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  period: string;
-  popular?: boolean;
-  description: string;
-  features: string[];
-  buttonText: string;
-  buttonVariant: "default" | "outline";
-}
+import { Badge } from "@/components/ui/badge";
+import { Check, Star, Zap, Crown, Loader2 } from "lucide-react";
+import { usePayments, Plan, SubscriptionInfo } from "@/hooks/usePayments";
+import { toast } from "react-hot-toast";
 
 export default function MentoriaPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { loading, error, createCheckoutSession, getAvailablePlans, getSubscriptionInfo } = usePayments();
 
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+
+  // Carregar planos e informações de assinatura
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoadingPlans(true);
+        const [plansData, subscriptionData] = await Promise.all([
+          getAvailablePlans(),
+          getSubscriptionInfo()
+        ]);
+        
+        setPlans(plansData);
+        setSubscriptionInfo(subscriptionData);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        toast.error('Erro ao carregar informações dos planos');
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    if (session) {
+      loadData();
+    }
+  }, [session]);
 
   // Se for admin, mostrar acesso total
   if (session?.user?.isAdmin) {
@@ -89,76 +110,27 @@ export default function MentoriaPage() {
     );
   }
 
-  const plans: Plan[] = [
-    {
-      id: 'basic',
-      name: 'Basic',
-      price: billingPeriod === 'monthly' ? 29.99 : 299.99,
-      period: billingPeriod === 'monthly' ? '/mês' : '/ano',
-      description: 'Ideal para quem está começando a organizar as finanças',
-      features: [
-        'Controle básico de transações',
-        'Relatórios mensais simples',
-        'Suporte por email',
-        'Acesso a conteúdo básico',
-        'Até 100 transações/mês',
-        'Dashboard personalizado'
-      ],
-      buttonText: 'Começar Grátis',
-      buttonVariant: 'outline'
-    },
-    {
-      id: 'advanced',
-      name: 'Advanced',
-      price: billingPeriod === 'monthly' ? 59.99 : 599.99,
-      period: billingPeriod === 'monthly' ? '/mês' : '/ano',
-      popular: true,
-      description: 'Para quem quer acelerar o crescimento financeiro',
-      features: [
-        'Tudo do plano Basic',
-        'Relatórios avançados com gráficos',
-        'Metas e planejamento financeiro',
-        'Sessões de mentoria mensais',
-        'Acesso a cursos exclusivos',
-        'Análise de investimentos',
-        'Transações ilimitadas',
-        'Suporte prioritário'
-      ],
-      buttonText: 'Assinar Agora',
-      buttonVariant: 'default'
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: billingPeriod === 'monthly' ? 99.99 : 999.99,
-      period: billingPeriod === 'monthly' ? '/mês' : '/ano',
-      description: 'Solução completa para independência financeira',
-      features: [
-        'Tudo do plano Advanced',
-        'Mentoria individual semanal',
-        'Consultoria personalizada',
-        'Acesso a todos os cursos',
-        'Comunidade VIP exclusiva',
-        'Análise de portfólio',
-        'Planejamento de aposentadoria',
-        'Suporte 24/7',
-        'Relatórios personalizados'
-      ],
-      buttonText: 'Falar com Consultor',
-      buttonVariant: 'outline'
-    }
-  ];
+  const handlePlanSelection = async (plan: Plan) => {
+    if (loading) return;
 
-  const handlePlanSelection = (planId: string) => {
-    // TODO: Implementar lógica de seleção de plano
-    console.log('Plano selecionado:', planId);
-    
-    if (planId === 'basic') {
-      alert('Plano Basic ativado! Você já tem acesso às funcionalidades básicas.');
-    } else if (planId === 'premium') {
-      alert('Redirecionando para consultor especializado...');
-    } else {
-      alert('Redirecionando para pagamento do plano Advanced...');
+    try {
+      // Verificar se é plano gratuito
+      if (plan.name === 'free') {
+        toast.success('Você já tem acesso ao plano gratuito!');
+        return;
+      }
+
+      // Verificar se já tem este plano
+      if (subscriptionInfo?.currentPlan === plan.name) {
+        toast.info('Você já possui este plano');
+        return;
+      }
+
+      // Redirecionar para checkout do Stripe
+      await createCheckoutSession(plan._id, billingPeriod);
+      
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao processar pagamento');
     }
   };
 
@@ -168,6 +140,25 @@ export default function MentoriaPage() {
       currency: 'BRL'
     }).format(price);
   };
+
+  const getPlanPrice = (plan: Plan) => {
+    return billingPeriod === 'yearly' ? plan.price.yearly : plan.price.monthly;
+  };
+
+  const getPlanPeriod = () => {
+    return billingPeriod === 'yearly' ? '/ano' : '/mês';
+  };
+
+  if (loadingPlans) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+          <p className="text-muted-foreground">Carregando planos...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-8">
@@ -180,6 +171,27 @@ export default function MentoriaPage() {
           Acelere sua jornada rumo à independência financeira com nossos planos de mentoria especializada
         </p>
       </div>
+
+      {/* Plano Atual */}
+      {subscriptionInfo && (
+        <Card className="max-w-md mx-auto border-primary">
+          <CardHeader className="text-center">
+            <CardTitle className="text-lg">Seu Plano Atual</CardTitle>
+            <CardDescription>
+              <Badge variant="secondary" className="text-sm">
+                {subscriptionInfo.planDetails?.displayName || subscriptionInfo.currentPlan}
+              </Badge>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            {subscriptionInfo.planExpiry && (
+              <p className="text-sm text-muted-foreground">
+                Expira em: {new Date(subscriptionInfo.planExpiry).toLocaleDateString('pt-BR')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Toggle de Período */}
       <div className="flex justify-center">
@@ -203,7 +215,7 @@ export default function MentoriaPage() {
             }`}
           >
             Anual
-                         <span className="ml-2 px-2 py-1 bg-success/10 text-success text-xs rounded-full">
+            <span className="ml-2 px-2 py-1 bg-success/10 text-success text-xs rounded-full">
               -17%
             </span>
           </button>
@@ -211,166 +223,104 @@ export default function MentoriaPage() {
       </div>
 
       {/* Cards de Planos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="grid gap-8 lg:grid-cols-3 max-w-6xl mx-auto">
         {plans.map((plan) => (
-          <Card 
-            key={plan.id} 
-            className={`relative ${
-              plan.popular 
-                ? 'border-primary shadow-lg scale-105' 
-                : 'border-border'
-            }`}
-          >
-            {plan.popular && (
+          <Card key={plan._id} className={`relative ${plan.isPopular ? 'ring-2 ring-primary' : ''}`}>
+            {plan.isPopular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                <Badge className="bg-primary text-primary-foreground">
+                  <Star className="w-3 h-3 mr-1" />
                   Mais Popular
-                </span>
+                </Badge>
               </div>
             )}
-
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
-              <div className="space-y-2">
-                <div className="flex items-baseline justify-center">
-                  <span className="text-3xl font-bold">{formatPrice(plan.price)}</span>
-                  <span className="text-muted-foreground ml-1">{plan.period}</span>
-                </div>
-                {billingPeriod === 'yearly' && (
-                  <p className="text-sm text-muted-foreground">
-                    Economize {formatPrice(plan.price * 0.17)} por ano
-                  </p>
-                )}
+            
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold">{plan.displayName}</CardTitle>
+              <div className="text-4xl font-bold text-primary">
+                {formatPrice(getPlanPrice(plan))}
+                <span className="text-lg text-muted-foreground font-normal">
+                  {getPlanPeriod()}
+                </span>
               </div>
-              <CardDescription className="text-center">
+              <CardDescription className="text-sm">
                 {plan.description}
               </CardDescription>
             </CardHeader>
-
+            
             <CardContent className="space-y-6">
-              <Button 
-                className="w-full" 
-                variant={plan.buttonVariant}
-                onClick={() => handlePlanSelection(plan.id)}
-              >
-                {plan.buttonText}
-              </Button>
-
-              <div className="space-y-3">
-                {plan.features.map((feature, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <span className="text-green-500 mt-0.5">✓</span>
+              <ul className="space-y-3">
+                {plan.highlights.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3">
+                    <Check className="w-4 h-4 text-success flex-shrink-0" />
                     <span className="text-sm">{feature}</span>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
+              
+              <Button 
+                onClick={() => handlePlanSelection(plan)}
+                disabled={loading || subscriptionInfo?.currentPlan === plan.name}
+                className="w-full"
+                variant={plan.isPopular ? "default" : "outline"}
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {subscriptionInfo?.currentPlan === plan.name 
+                  ? 'Plano Atual' 
+                  : plan.name === 'free' 
+                    ? 'Gratuito' 
+                    : 'Assinar Agora'
+                }
+              </Button>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Seção de Benefícios */}
-      <div className="bg-muted/50 rounded-lg p-8 space-y-6">
-        <h2 className="text-2xl font-bold text-center">
-          Por que escolher a Fabi Finanças?
+      {/* Recursos Adicionais */}
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold text-center mb-8">
+          Por que escolher nossa mentoria?
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid gap-6 md:grid-cols-3">
           <div className="text-center space-y-3">
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-2xl">🎯</span>
+              <Crown className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-semibold">Metodologia Comprovada</h3>
+            <h3 className="font-semibold">Mentoria Personalizada</h3>
             <p className="text-sm text-muted-foreground">
-              Sistema testado e aprovado por mais de 10.000 pessoas que alcançaram a independência financeira
+              Sessões individuais com especialistas em finanças pessoais
             </p>
           </div>
-
+          
           <div className="text-center space-y-3">
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-2xl">👩‍🏫</span>
+              <Zap className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-semibold">Mentoria Especializada</h3>
+            <h3 className="font-semibold">Resultados Rápidos</h3>
             <p className="text-sm text-muted-foreground">
-              Acompanhamento direto com especialistas certificados em planejamento financeiro
+              Metodologia comprovada para organizar suas finanças em 30 dias
             </p>
           </div>
-
+          
           <div className="text-center space-y-3">
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-2xl">📈</span>
+              <Star className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-semibold">Resultados Garantidos</h3>
+            <h3 className="font-semibold">Suporte Contínuo</h3>
             <p className="text-sm text-muted-foreground">
-              Garantia de 30 dias ou seu dinheiro de volta. Estamos confiantes no nosso método
+              Acompanhamento constante para garantir seu sucesso financeiro
             </p>
           </div>
         </div>
       </div>
 
-      {/* FAQ Rápido */}
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-center">Dúvidas Frequentes</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Posso cancelar a qualquer momento?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Sim! Você pode cancelar sua assinatura a qualquer momento sem taxas adicionais.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Como funciona a mentoria?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Sessões individuais por videochamada com mentores especializados, focadas nos seus objetivos.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Há garantia de resultados?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Oferecemos garantia de 30 dias. Se não ficar satisfeito, devolvemos 100% do valor.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Posso mudar de plano depois?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Claro! Você pode fazer upgrade ou downgrade do seu plano a qualquer momento.
-              </p>
-            </CardContent>
-          </Card>
+      {error && (
+        <div className="max-w-md mx-auto p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-destructive text-sm text-center">{error}</p>
         </div>
-      </div>
-
-      {/* CTA Final */}
-      <div className="text-center space-y-4 bg-primary/5 rounded-lg p-8">
-        <h2 className="text-2xl font-bold">
-          Pronto para transformar sua vida financeira?
-        </h2>
-        <p className="text-muted-foreground">
-          Junte-se a milhares de pessoas que já alcançaram a independência financeira
-        </p>
-        <Button size="lg" onClick={() => handlePlanSelection('advanced')}>
-          Começar Agora - Plano Advanced
-        </Button>
-      </div>
+      )}
     </div>
   );
 } 

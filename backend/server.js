@@ -7,6 +7,7 @@ const categoryRoutes = require('./routes/categoryRoutes.js');
 const goalRoutes = require('./routes/goalRoutes.js');
 const budgetRoutes = require('./routes/budgetRoutes.js');
 const adminRoutes = require('./routes/adminRoutes.js');
+const paymentRoutes = require('./routes/paymentRoutes.js');
 const testRoutes = require('./routes/testRoutes.js');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware.js');
 const path = require('path');
@@ -56,6 +57,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/test', testRoutes);
 
 // Middlewares de erro (devem ser os últimos)

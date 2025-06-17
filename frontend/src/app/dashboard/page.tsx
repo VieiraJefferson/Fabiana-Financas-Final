@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import PaymentStatus from "@/components/payment-status";
 import {
   Card,
   CardContent,
@@ -120,6 +121,7 @@ export default function DashboardPage() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showPaymentStatus, setShowPaymentStatus] = useState(false);
 
   // Ref para evitar múltiplas requisições simultâneas
   const isFetchingRef = useRef(false);
@@ -193,6 +195,12 @@ export default function DashboardPage() {
       toast.success("Login realizado com sucesso!");
       toast.success("Bem-vindo de volta! Vamos cuidar das suas finanças juntos!");
       router.replace("/dashboard", { scroll: false });
+    }
+
+    // Verificar se há parâmetros de pagamento
+    const paymentStatus = searchParams.get("payment");
+    if (paymentStatus) {
+      setShowPaymentStatus(true);
     }
   }, [searchParams, router]);
 
@@ -673,6 +681,20 @@ export default function DashboardPage() {
             <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-500/20 rounded-md text-red-600 dark:text-red-400">
               <p className="font-medium">{error}</p>
             </div>
+          )}
+
+          {/* Status do Pagamento */}
+          {showPaymentStatus && (
+            <PaymentStatus 
+              onClose={() => {
+                setShowPaymentStatus(false);
+                // Limpar parâmetros da URL
+                const url = new URL(window.location.href);
+                url.searchParams.delete('payment');
+                url.searchParams.delete('session_id');
+                router.replace(url.pathname);
+              }}
+            />
           )}
 
 
