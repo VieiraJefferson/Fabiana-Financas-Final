@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Check, Star, Zap, Crown, Loader2 } from "lucide-react";
 import { usePayments, Plan, SubscriptionInfo } from "@/hooks/usePayments";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function MentoriaPage() {
   const { data: session } = useSession();

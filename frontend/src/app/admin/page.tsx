@@ -19,7 +19,7 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface AdminStats {
   totalUsers: number;

@@ -20,7 +20,7 @@ import {
   Loader2
 } from 'lucide-react';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface Plan {
   _id: string;
