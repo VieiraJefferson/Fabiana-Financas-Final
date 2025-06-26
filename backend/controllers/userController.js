@@ -241,6 +241,73 @@ const updateUserProfilePhoto = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Autenticar/Criar usuário via Google
+// @route   POST /api/users/google-auth
+// @access  Public
+const googleAuth = asyncHandler(async (req, res) => {
+  const { email, name, image, googleId } = req.body;
+
+  console.log('=== DEBUG GOOGLE AUTH ===');
+  console.log('Email:', email);
+  console.log('Name:', name);
+  console.log('GoogleId:', googleId);
+
+  try {
+    // Verificar se o usuário já existe
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Usuário já existe, fazer login
+      console.log('✅ Usuário existente encontrado');
+      
+      // Atualizar informações do Google se necessário
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.image = image || user.image;
+        await user.save();
+        console.log('📝 Atualizadas informações do Google no usuário existente');
+      }
+    } else {
+      // Criar novo usuário
+      console.log('🆕 Criando novo usuário via Google');
+      
+      user = await User.create({
+        name,
+        email,
+        image,
+        googleId,
+        password: 'google-auth-' + Date.now(), // Senha temporária (não será usada)
+        isGoogleUser: true
+      });
+      
+      console.log('✅ Novo usuário criado via Google');
+    }
+
+    const responseData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      isAdmin: user.isAdmin,
+      token: generateToken(user._id),
+    };
+
+    console.log('📤 Google Auth - Dados enviados:', {
+      _id: responseData._id,
+      name: responseData.name,
+      email: responseData.email,
+      hasImage: !!responseData.image,
+      isAdmin: responseData.isAdmin
+    });
+
+    res.json(responseData);
+  } catch (error) {
+    console.error('❌ Erro no Google Auth:', error);
+    res.status(500);
+    throw new Error('Erro na autenticação com Google');
+  }
+});
+
 module.exports = { 
   registerUser, 
   authUser, 
@@ -248,4 +315,5 @@ module.exports = {
   updateUserProfile, 
   updateUserPassword,
   updateUserProfilePhoto,
+  googleAuth,
 }; 

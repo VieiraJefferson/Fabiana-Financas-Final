@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, authUser, getUserProfile, updateUserProfile, updateUserPassword, updateUserProfilePhoto } = require('../controllers/userController.js');
+const { registerUser, authUser, getUserProfile, updateUserProfile, updateUserPassword, updateUserProfilePhoto, googleAuth } = require('../controllers/userController.js');
 const { protect } = require('../middleware/authMiddleware.js');
 const upload = require('../middleware/uploadMiddleware.js');
 
 router.route('/').post(registerUser);
 router.route('/login').post(authUser);
+router.route('/google-auth').post(googleAuth);
 
 // Rotas para o perfil do usuário
 // GET /api/users/profile - Buscar perfil

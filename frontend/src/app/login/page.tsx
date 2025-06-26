@@ -39,7 +39,9 @@ export default function LoginPage() {
         toast.error("Email ou senha incorretos");
       } else if (result?.ok) {
         toast.success("Login realizado com sucesso!");
-        router.push("/dashboard?loggedin=true");
+        // Todos os usuários (admin e comum) vão para o dashboard
+        // Admin terá acesso ao painel admin através do sidebar
+        router.push("/dashboard");
       }
 
     } catch (err) {

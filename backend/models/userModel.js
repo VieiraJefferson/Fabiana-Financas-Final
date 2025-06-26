@@ -20,6 +20,15 @@ const userSchema = mongoose.Schema(
       type: String,
       required: false,
     },
+    // Campos para autenticação Google
+    googleId: {
+      type: String,
+      required: false,
+    },
+    isGoogleUser: {
+      type: Boolean,
+      default: false,
+    },
     // Sistema de roles mais robusto
     role: {
       type: String,
