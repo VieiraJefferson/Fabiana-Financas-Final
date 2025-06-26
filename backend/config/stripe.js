@@ -5,9 +5,10 @@ require('dotenv').config();
 
 // Verificar se a chave existe
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.error('❌ STRIPE_SECRET_KEY não encontrada nas variáveis de ambiente');
-  console.error('Certifique-se de que o arquivo .env existe e contém STRIPE_SECRET_KEY=sk_test_...');
-  process.exit(1);
+  console.warn('⚠️ STRIPE_SECRET_KEY não encontrada nas variáveis de ambiente');
+  console.warn('As funcionalidades de pagamento não estarão disponíveis');
+  module.exports = null;
+  return;
 }
 
 // Inicializar Stripe com a chave secreta

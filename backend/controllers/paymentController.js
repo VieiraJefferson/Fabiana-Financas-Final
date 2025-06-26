@@ -1,5 +1,10 @@
 const asyncHandler = require('express-async-handler');
 const stripe = require('../config/stripe');
+
+// Verificar se o Stripe está disponível
+if (!stripe) {
+  console.warn('⚠️ Stripe não está configurado. Funcionalidades de pagamento desabilitadas.');
+}
 const Plan = require('../models/planModel');
 const { User } = require('../models/userModel');
 
@@ -7,6 +12,14 @@ const { User } = require('../models/userModel');
 // @route   POST /api/payments/create-checkout-session
 // @access  Private
 const createCheckoutSession = asyncHandler(async (req, res) => {
+  // Verificar se Stripe está disponível
+  if (!stripe) {
+    return res.status(503).json({
+      success: false,
+      message: 'Serviço de pagamento não está disponível no momento'
+    });
+  }
+
   try {
     const { planId, billingPeriod = 'monthly' } = req.body;
     const userId = req.user.id;
@@ -118,6 +131,14 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
 // @route   POST /api/payments/webhook
 // @access  Public (mas verificado via Stripe)
 const handleStripeWebhook = asyncHandler(async (req, res) => {
+  // Verificar se Stripe está disponível
+  if (!stripe) {
+    return res.status(503).json({
+      success: false,
+      message: 'Serviço de pagamento não está disponível no momento'
+    });
+  }
+
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
   
