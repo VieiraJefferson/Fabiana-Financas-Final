@@ -45,7 +45,7 @@ const handler = NextAuth({
           }
           
           return null;
-        } catch (error) {
+        } catch (error: any) {
           console.error('Erro na autenticação:', error.response?.data || error.message);
           return null;
         }
@@ -78,7 +78,7 @@ const handler = NextAuth({
           user.role = response.data.role || (response.data.isAdmin ? 'admin' : 'user');
           user.token = response.data.token;
           
-        } catch (error) {
+        } catch (error: any) {
           console.error('Erro no Google Auth:', error.response?.data || error.message);
           return false;
         }
