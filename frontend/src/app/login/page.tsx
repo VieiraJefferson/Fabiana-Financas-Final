@@ -23,8 +23,6 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const loadingToast = toast.loading("Fazendo login...");
-
     try {
       const result = await signIn("credentials", {
         email,
@@ -32,20 +30,29 @@ export default function LoginPage() {
         redirect: false,
       });
 
-      toast.dismiss(loadingToast);
-
       if (result?.error) {
         setError("Email ou senha incorretos");
         toast.error("Email ou senha incorretos");
       } else if (result?.ok) {
-        toast.success("Login realizado com sucesso!");
-        // Todos os usuários (admin e comum) vão para o dashboard
-        // Admin terá acesso ao painel admin através do sidebar
-        router.push("/dashboard");
+        // Obter a sessão para verificar o tipo de usuário
+        const session = await getSession();
+        
+        if (session?.user) {
+          const isAdmin = session.user.isAdmin || session.user.role === 'admin';
+          
+          toast.success("Login realizado com sucesso!");
+          
+          // Redirecionar baseado no tipo de usuário
+          if (isAdmin) {
+            router.push("/admin");
+          } else {
+            router.push("/dashboard");
+          }
+        } else {
+          toast.error("Erro ao obter dados do usuário");
+        }
       }
-
     } catch (err) {
-      toast.dismiss(loadingToast);
       setError("Erro ao fazer login. Tente novamente.");
       toast.error("Erro ao fazer login. Tente novamente.");
     } finally {
@@ -54,7 +61,6 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    toast.info("Redirecionando para o Google...");
     signIn("google", { callbackUrl: "/dashboard" });
   };
 
@@ -199,45 +205,9 @@ export default function LoginPage() {
             <h2 className="text-3xl font-bold text-foreground drop-shadow-lg">
               Transforme sua vida financeira
             </h2>
-            <p className="text-lg text-muted-foreground leading-relaxed drop-shadow-md">
-              Aprenda a gerenciar suas finanças de forma inteligente com metodologia comprovada.
+            <p className="text-lg text-muted-foreground drop-shadow-md">
+              Com a Fabi, você aprende a gerenciar suas finanças de forma inteligente e alcança seus objetivos.
             </p>
-            
-            {/* Features */}
-            <div className="space-y-3 text-left">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-sm text-muted-foreground drop-shadow-sm">Controle completo de gastos</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-sm text-muted-foreground drop-shadow-sm">Mentoria personalizada</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-sm text-muted-foreground drop-shadow-sm">Metas financeiras inteligentes</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-sm text-muted-foreground drop-shadow-sm">Conteúdo educativo exclusivo</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-12 grid grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-2xl font-bold text-primary drop-shadow-lg">1.2k+</div>
-              <div className="text-xs text-muted-foreground drop-shadow-sm">Usuários ativos</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-primary drop-shadow-lg">45+</div>
-              <div className="text-xs text-muted-foreground drop-shadow-sm">Vídeos educativos</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-primary drop-shadow-lg">4.8★</div>
-              <div className="text-xs text-muted-foreground drop-shadow-sm">Avaliação média</div>
-            </div>
           </div>
         </div>
       </div>
