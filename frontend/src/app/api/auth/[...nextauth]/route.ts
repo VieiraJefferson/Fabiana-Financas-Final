@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import axios from 'axios';
 
+const backendUrl = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
+
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -22,7 +24,7 @@ const handler = NextAuth({
 
         try {
           // Requisição direta para o backend
-          const response = await axios.post('http://localhost:5001/api/users/login', {
+          const response = await axios.post(`${backendUrl}/api/users/login`, {
             email: credentials.email,
             password: credentials.password,
           });
@@ -32,11 +34,13 @@ const handler = NextAuth({
           if (user && user._id) {
             return {
               id: user._id,
+              _id: user._id,
               name: user.name,
               email: user.email,
               image: user.image,
               isAdmin: user.isAdmin,
               role: user.role || (user.isAdmin ? 'admin' : 'user'),
+              token: user.token
             };
           }
           
@@ -56,6 +60,32 @@ const handler = NextAuth({
     maxAge: 24 * 60 * 60, // 24 horas
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Para login com Google, criar/encontrar usuário no backend
+      if (account?.provider === "google") {
+        try {
+          const response = await axios.post(`${backendUrl}/api/users/google-auth`, {
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            googleId: profile?.sub
+          });
+          
+          // Adicionar dados do backend ao user object
+          user.id = response.data._id;
+          user._id = response.data._id;
+          user.isAdmin = response.data.isAdmin;
+          user.role = response.data.role || (response.data.isAdmin ? 'admin' : 'user');
+          user.token = response.data.token;
+          
+        } catch (error) {
+          console.error('Erro no Google Auth:', error.response?.data || error.message);
+          return false;
+        }
+      }
+      
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
