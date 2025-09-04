@@ -30,8 +30,7 @@ router.route('/:id')
   .put(updateGoal)
   .delete(deleteGoal);
 
-// Rota para atualizar o progresso de uma meta
-router.route('/:id/progress')
-  .patch(updateGoalProgress);
+// Rota para atualizar o progresso de uma meta (corrigida)
+router.patch('/:id/progress', updateGoalProgress);
 
 module.exports = router; 

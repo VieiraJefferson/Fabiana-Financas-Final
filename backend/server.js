@@ -79,7 +79,7 @@ app.use((err, req, res, next) => {
 });
 
 // Rota 404 para endpoints não encontrados
-app.use('*', (req, res) => {
+app.use('(.*)', (req, res) => {
   res.status(404).json({
     error: 'Endpoint não encontrado',
     path: req.originalUrl,
