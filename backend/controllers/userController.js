@@ -1,121 +1,360 @@
 const { User, comparePassword } = require('../models/userModel.js');
-const asyncHandler = require('express-async-handler'); // Para lidar com erros em rotas assíncronas
-const generateToken = require('../utils/generateToken.js');
-
-// @desc    Autenticar usuário & obter token
-// @route   POST /api/users/login
-// @access  Public
-const authUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-
-  console.log('=== DEBUG LOGIN ===');
-  console.log('Email recebido:', email);
-  console.log('Senha recebida:', password);
-
-  const user = await User.findOne({ email });
-
-  console.log('Usuário encontrado:', user ? 'SIM' : 'NÃO');
-  if (user) {
-    console.log('Senha no banco (primeiros 10 chars):', user.password.substring(0, 10));
-    
-    const passwordMatch = await comparePassword(password, user.password);
-    console.log('Resultado da comparação:', passwordMatch);
-    
-    if (passwordMatch) {
-      console.log('Login bem-sucedido!');
-      console.log('📷 Image do usuário:', user.image ? `Base64 com ${user.image.length} chars` : 'SEM IMAGEM');
-      const responseData = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        image: user.image, // ← Incluindo a imagem no login
-        isAdmin: user.isAdmin,
-        token: generateToken(user._id),
-      };
-      console.log('📤 Dados enviados no login:', {
-        _id: responseData._id,
-        name: responseData.name,
-        email: responseData.email,
-        hasImage: !!responseData.image,
-        imageSize: responseData.image ? responseData.image.length : 0,
-        isAdmin: responseData.isAdmin
-      });
-      res.json(responseData);
-    } else {
-      console.log('Senha incorreta!');
-      res.status(401);
-      throw new Error('Email ou senha inválidos');
-    }
-  } else {
-    console.log('Usuário não encontrado!');
-    res.status(401);
-    throw new Error('Email ou senha inválidos');
-  }
-});
+const RefreshRepo = require('../repos/refreshRepo.js');
+const { v4: uuid } = require('uuid');
+const { 
+  generateTokenPair, 
+  setAuthCookies, 
+  clearAuthCookies,
+  rotateTokens,
+  verifyAccessToken,
+  verifyRefreshToken
+} = require('../utils/tokenManager.js');
 
 // @desc    Registrar um novo usuário
 // @route   POST /api/users
 // @access  Public
-const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+const registerUser = async (req, res, next) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+    }
 
-  const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(409).json({ error: 'Email já cadastrado' });
+    }
 
-  if (userExists) {
-    res.status(400);
-    throw new Error('Usuário já existe');
-  }
-
-  const user = await User.create({
-    name,
-    email,
-    password, // A senha será criptografada pelo middleware no modelo
-  });
-
-  if (user) {
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      image: user.image, // ← Incluindo a imagem no registro
-      isAdmin: user.isAdmin,
-      token: generateToken(user._id),
+    const user = await User.create({
+      name,
+      email,
+      password, // A senha será criptografada pelo middleware no modelo
+      role: 'user'
     });
-  } else {
-    res.status(400);
-    throw new Error('Dados de usuário inválidos');
+
+    if (user) {
+      // Login automático pós-cadastro
+      const payload = { 
+        id: user._id.toString(), 
+        role: 'user',
+        type: 'access'
+      };
+      
+      const jti = uuid();
+      const { accessToken, refreshToken } = generateTokenPair(user._id);
+      
+      // Salvar refresh token no repositório
+      await RefreshRepo.save(jti, user._id, {
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip || req.connection.remoteAddress,
+        deviceId: req.headers['x-device-id'] || 'unknown'
+      });
+      
+      // Incrementar sessões ativas
+      await user.incrementActiveSessions();
+      
+      // Configurar cookies
+      setAuthCookies(res, accessToken, refreshToken);
+      
+      res.status(201).json({ 
+        user: { 
+          id: user._id, 
+          name: user.name, 
+          email: user.email, 
+          role: 'user' 
+        },
+        message: 'Usuário registrado e logado com sucesso'
+      });
+    } else {
+      res.status(400);
+      throw new Error('Dados de usuário inválidos');
+    }
+  } catch (error) {
+    next(error);
   }
-});
+};
+
+// @desc    Autenticar usuário & obter tokens
+// @route   POST /api/users/login
+// @access  Public
+const authUser = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    console.log('=== DEBUG LOGIN ===');
+    console.log('Email recebido:', email);
+    console.log('Senha recebida:', password);
+
+    const user = await User.findOne({ email });
+
+    console.log('Usuário encontrado:', user ? 'SIM' : 'NÃO');
+    if (user) {
+      console.log('Senha no banco (primeiros 10 chars):', user.password.substring(0, 10));
+      
+      const passwordMatch = await comparePassword(password, user.password);
+      console.log('Resultado da comparação:', passwordMatch);
+      
+      if (passwordMatch) {
+        console.log('Login bem-sucedido!');
+        
+        const payload = { 
+          id: user._id.toString(), 
+          role: user.role || (user.isAdmin ? 'admin' : 'user'),
+          type: 'access'
+        };
+        
+        const jti = uuid();
+        const { accessToken, refreshToken } = generateTokenPair(user._id);
+        
+        // Salvar refresh token no repositório
+        await RefreshRepo.save(jti, user._id, {
+          userAgent: req.headers['user-agent'],
+          ipAddress: req.ip || req.connection.remoteAddress,
+          deviceId: req.headers['x-device-id'] || 'unknown'
+        });
+        
+        // Incrementar sessões ativas
+        await user.incrementActiveSessions();
+        
+        // Configurar cookies httpOnly
+        setAuthCookies(res, accessToken, refreshToken);
+        
+        // Resposta sem expor tokens no body
+        const responseData = {
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            isAdmin: user.isAdmin,
+            role: user.role || (user.isAdmin ? 'admin' : 'user')
+          },
+          message: 'Login realizado com sucesso'
+        };
+        
+        console.log('📤 Dados enviados no login:', {
+          _id: responseData.user.id,
+          name: responseData.user.name,
+          email: responseData.user.email,
+          hasImage: !!responseData.user.image,
+          imageSize: responseData.user.image ? responseData.user.image.length : 0,
+          isAdmin: responseData.user.isAdmin
+        });
+        
+        res.json(responseData);
+      } else {
+        console.log('Senha incorreta!');
+        res.status(401);
+        throw new Error('Email ou senha inválidos');
+      }
+    } else {
+      console.log('Usuário não encontrado!');
+      res.status(401);
+      throw new Error('Email ou senha inválidos');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Refresh token (renovar access token)
+// @route   POST /api/users/refresh
+// @access  Public
+const refreshToken = async (req, res, next) => {
+  try {
+    const { refresh_token } = req.cookies;
+    
+    if (!refresh_token) {
+      return res.status(401).json({ error: 'Sem refresh token' });
+    }
+
+    const decoded = verifyRefreshToken(refresh_token);
+    
+    if (!decoded.jti) {
+      return res.status(401).json({ error: 'Refresh token inválido - JTI ausente' });
+    }
+    
+    // Verificar se o refresh token é válido no repositório
+    const isValid = await RefreshRepo.isValid(decoded.jti, decoded.id);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Refresh token inválido ou revogado' });
+    }
+    
+    // Verificar se o usuário ainda existe e está ativo
+    const user = await User.findById(decoded.id);
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Usuário não encontrado ou inativo' });
+    }
+    
+    // Revogar o refresh token atual
+    await RefreshRepo.revoke(decoded.jti);
+    
+    // Gerar novos tokens
+    const payload = { 
+      id: user._id.toString(), 
+      role: user.role || (user.isAdmin ? 'admin' : 'user'),
+      type: 'access'
+    };
+    
+    const newJti = uuid();
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = generateTokenPair(user._id);
+    
+    // Salvar novo refresh token
+    await RefreshRepo.save(newJti, user._id, {
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip || req.connection.remoteAddress,
+      deviceId: req.headers['x-device-id'] || 'unknown'
+    });
+    
+    // Configurar novos cookies
+    setAuthCookies(res, newAccessToken, newRefreshToken);
+    
+    res.json({ 
+      message: 'Token renovado com sucesso',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        role: user.role
+      }
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Logout do usuário
+// @route   POST /api/users/logout
+// @access  Private
+const logout = async (req, res, next) => {
+  try {
+    const { refresh_token } = req.cookies;
+    
+    if (refresh_token) {
+      try {
+        // Decodificar o refresh token para obter o JTI
+        const decoded = verifyRefreshToken(refresh_token);
+        if (decoded.jti) {
+          // Revogar o refresh token específico
+          await RefreshRepo.revoke(decoded.jti);
+        }
+      } catch (error) {
+        console.log('Refresh token inválido durante logout:', error.message);
+      }
+    }
+    
+    // Decrementar sessões ativas
+    if (req.user) {
+      await User.findByIdAndUpdate(req.user.id, {
+        $inc: { activeSessions: -1 }
+      });
+    }
+    
+    // Limpar cookies
+    clearAuthCookies(res);
+    
+    res.json({ message: 'Logout realizado com sucesso' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Logout de todas as sessões
+// @route   POST /api/users/logout-all
+// @access  Private
+const logoutAll = async (req, res, next) => {
+  try {
+    // Revogar todos os refresh tokens do usuário
+    await RefreshRepo.revokeAllByUserId(req.user.id);
+    
+    // Limpar sessões ativas
+    await User.findByIdAndUpdate(req.user.id, { activeSessions: 0 });
+    
+    // Limpar cookies
+    clearAuthCookies(res);
+    
+    res.json({ message: 'Logout de todas as sessões realizado com sucesso' });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Buscar perfil do usuário
 // @route   GET /api/users/profile
 // @access  Private
-const getUserProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id);
+const getUserProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
 
-  if (user) {
-    console.log('🔍 Perfil encontrado:', {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      hasImage: !!user.image,
-      imageUrl: user.image
-    });
+    if (user) {
+      // Buscar sessões ativas (refresh tokens válidos)
+      const activeTokens = await RefreshRepo.findValidByUserId(user._id);
+      
+      console.log('🔍 Perfil encontrado:', {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        hasImage: !!user.image,
+        imageSize: user.image ? user.image.length : 0,
+        isAdmin: user.isAdmin,
+        role: user.role,
+        activeSessions: user.activeSessions,
+        activeTokens: activeTokens.length
+      });
+      
+      res.json({
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          isAdmin: user.isAdmin,
+          role: user.role,
+          plan: user.plan,
+          planExpiry: user.planExpiry,
+          planFeatures: user.planFeatures,
+          isActive: user.isActive,
+          lastLogin: user.lastLogin,
+          activeSessions: user.activeSessions,
+          activeTokens: activeTokens.length,
+          createdAt: user.createdAt
+        }
+      });
+    } else {
+      res.status(404);
+      throw new Error('Usuário não encontrado');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Obter estatísticas de sessões
+// @route   GET /api/users/sessions
+// @access  Private
+const getSessionStats = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    const activeTokens = await RefreshRepo.findValidByUserId(user._id);
+    const tokenAudit = await RefreshRepo.findWithAudit(user._id, 5);
     
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      image: user.image,
-      isAdmin: user.isAdmin,
-      role: user.role,
-      plan: user.plan,
+      activeSessions: user.activeSessions,
+      activeTokens: activeTokens.length,
+      recentSessions: tokenAudit,
+      lastLogin: user.lastLogin
     });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
+  } catch (error) {
+    next(error);
   }
-});
+};
 
 // @desc    Atualizar perfil do usuário
 // @route   PUT /api/users/profile
@@ -149,7 +388,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         role: updatedUser.role,
         plan: updatedUser.plan,
       },
-      token: generateToken(updatedUser._id), // Retorna um novo token com os dados atualizados
+      token: generateTokenPair(updatedUser._id).accessToken, // Retorna um novo token com os dados atualizados
     });
   } else {
     res.status(404);
@@ -289,7 +528,7 @@ const googleAuth = asyncHandler(async (req, res) => {
       email: user.email,
       image: user.image,
       isAdmin: user.isAdmin,
-      token: generateToken(user._id),
+      token: generateTokenPair(user._id).accessToken,
     };
 
     console.log('📤 Google Auth - Dados enviados:', {
@@ -316,4 +555,8 @@ module.exports = {
   updateUserPassword,
   updateUserProfilePhoto,
   googleAuth,
+  refreshToken,
+  logout,
+  logoutAll,
+  getSessionStats,
 }; 

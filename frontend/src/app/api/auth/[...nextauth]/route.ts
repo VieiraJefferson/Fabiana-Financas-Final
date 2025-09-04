@@ -1,21 +1,17 @@
-import NextAuth from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
-import axios from 'axios';
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import axios from "axios";
 
-const backendUrl = process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001';
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const handler = NextAuth({
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -23,87 +19,123 @@ const handler = NextAuth({
         }
 
         try {
-          // Requisição direta para o backend
+          console.log('🔐 Tentando login com credenciais...');
+          
           const response = await axios.post(`${backendUrl}/api/users/login`, {
             email: credentials.email,
             password: credentials.password,
+          }, {
+            withCredentials: true, // CRÍTICO: enviar cookies
+            headers: {
+              'Content-Type': 'application/json',
+            }
           });
 
-          const user = response.data;
+          console.log('✅ Login bem-sucedido no backend');
           
-          if (user && user._id) {
+          if (response.data && response.data.user) {
+            const user = response.data.user;
+            
+            // Retornar dados do usuário sem tokens (eles estão nos cookies)
             return {
-              id: user._id,
-              _id: user._id,
+              id: user.id,
               name: user.name,
               email: user.email,
               image: user.image,
               isAdmin: user.isAdmin,
-              role: user.role || (user.isAdmin ? 'admin' : 'user'),
-              token: user.token
+              role: user.role,
             };
           }
-          
+
           return null;
         } catch (error: any) {
-          console.error('Erro na autenticação:', error.response?.data || error.message);
-          return null;
+          console.error('❌ Erro no login:', error.response?.data || error.message);
+          
+          if (error.response?.status === 401) {
+            throw new Error('Email ou senha inválidos');
+          }
+          
+          throw new Error('Erro interno do servidor');
         }
-      },
+      }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     })
   ],
-  pages: {
-    signIn: '/login',
-  },
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 horas
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
   },
   callbacks: {
+    async jwt({ token, user, account }) {
+      // Se for o primeiro login, incluir dados do usuário
+      if (user) {
+        token.id = user.id;
+        token.isAdmin = user.isAdmin;
+        token.role = user.role;
+        token.image = user.image;
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      // Incluir dados do usuário na sessão
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.isAdmin = token.isAdmin as boolean;
+        session.user.role = token.role as string;
+        session.user.image = token.image as string;
+      }
+
+      return session;
+    },
     async signIn({ user, account, profile }) {
-      // Para login com Google, criar/encontrar usuário no backend
-      if (account?.provider === "google") {
+      // Para login com Google, verificar se o usuário existe no backend
+      if (account?.provider === 'google') {
         try {
           const response = await axios.post(`${backendUrl}/api/users/google-auth`, {
             email: user.email,
             name: user.name,
             image: user.image,
-            googleId: profile?.sub
+          }, {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json',
+            }
           });
-          
-          // Adicionar dados do backend ao user object
-          user.id = response.data._id;
-          user._id = response.data._id;
-          user.isAdmin = response.data.isAdmin;
-          user.role = response.data.role || (response.data.isAdmin ? 'admin' : 'user');
-          user.token = response.data.token;
-          
-        } catch (error: any) {
-          console.error('Erro no Google Auth:', error.response?.data || error.message);
+
+          if (response.data && response.data.user) {
+            // Atualizar dados do usuário com informações do backend
+            user.id = response.data.user.id;
+            user.isAdmin = response.data.user.isAdmin;
+            user.role = response.data.user.role;
+            return true;
+          }
+        } catch (error) {
+          console.error('Erro na autenticação Google:', error);
           return false;
         }
       }
-      
+
       return true;
     },
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.isAdmin = user.isAdmin;
-        token.role = user.role;
+    async redirect({ url, baseUrl }) {
+      // Redirecionar para dashboard após login
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      } else if (new URL(url).origin === baseUrl) {
+        return url;
       }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.isAdmin = token.isAdmin as boolean;
-        session.user.role = token.role as string;
-      }
-      return session;
+      return baseUrl;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET,
-})
+  pages: {
+    signIn: '/login',
+    error: '/login',
+  },
+  debug: process.env.NODE_ENV === 'development',
+});
 
-export { handler as GET, handler as POST }
+export { handler as GET, handler as POST };

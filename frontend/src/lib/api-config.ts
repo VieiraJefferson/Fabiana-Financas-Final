@@ -1,7 +1,7 @@
 // Configuração centralizada da API
 export const API_CONFIG = {
   // URL base do backend - será diferente em desenvolvimento e produção
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXTAUTH_BACKEND_URL || 'http://localhost:5001',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://fabiana-financas-backend.onrender.com',
   
   // Endpoints da API
   ENDPOINTS: {
@@ -40,7 +40,7 @@ export const API_CONFIG = {
 };
 
 // Helper para construir URLs completas
-export const buildApiUrl = (endpoint: string): string => {
+export const buildApiUrl = (endpoint: string) => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
@@ -54,10 +54,10 @@ export interface ApiResponse<T = any> {
 
 // Tipos para paginação
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  pagination?: {
+  pagination: {
     page: number;
     limit: number;
     total: number;
-    pages: number;
+    totalPages: number;
   };
 } 

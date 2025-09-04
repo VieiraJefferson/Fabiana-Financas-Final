@@ -4,35 +4,66 @@ import { useCallback } from "react";
 export const useAuth = () => {
   const { data: session, status } = useSession();
 
-  const getAuthToken = useCallback(() => {
+  const getAuthToken = useCallback(async () => {
     console.log('=== DEBUG useAuth.getAuthToken ===');
     console.log('Session:', session);
-    console.log('Session accessToken:', session?.accessToken);
     
-    if (!session?.accessToken) {
-      console.log('Token não encontrado na sessão');
-      // Retornar null ou uma string vazia em vez de lançar um erro aqui
-      // para permitir que a UI reaja de forma mais graciosa.
-      return null;
-    }
-    
-    console.log('Token encontrado:', session.accessToken.substring(0, 20) + '...');
-    // Usar o JWT token real do backend
-    return session.accessToken;
+    // Como agora usamos cookies httpOnly, não precisamos mais gerenciar tokens manualmente
+    // O backend gerencia automaticamente através dos cookies
+    console.log('✅ Usando sistema de cookies httpOnly - tokens gerenciados automaticamente');
+    return 'cookie-based-auth';
   }, [session]);
 
   const getAuthHeaders = useCallback(() => {
-    const token = getAuthToken();
-    if (!token) {
-      // Se não houver token, não podemos formar os cabeçalhos.
-      // Retornar null para que a lógica de chamada possa lidar com isso.
-      return null;
-    }
+    // Para o novo sistema, não precisamos mais enviar Authorization header
+    // O backend lê automaticamente dos cookies
     return {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
-  }, [getAuthToken]);
+  }, []);
+
+  const makeAuthenticatedRequest = useCallback(async (url: string, options: RequestInit = {}) => {
+    const defaultOptions: RequestInit = {
+      credentials: 'include', // Importante para enviar cookies
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      const response = await fetch(url, defaultOptions);
+      
+      // Se o token expirou, tentar renovar automaticamente
+      if (response.status === 401) {
+        console.log('🔄 Token expirado, tentando renovar...');
+        
+        try {
+          const refreshResponse = await fetch('/api/users/refresh', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (refreshResponse.ok) {
+            console.log('✅ Token renovado, repetindo requisição original...');
+            // Repetir a requisição original com o novo token
+            return fetch(url, defaultOptions);
+          }
+        } catch (refreshError) {
+          console.error('❌ Erro ao renovar token:', refreshError);
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('❌ Erro na requisição autenticada:', error);
+      throw error;
+    }
+  }, []);
 
   return {
     session,
@@ -40,5 +71,6 @@ export const useAuth = () => {
     isAuthenticated: !!session?.user,
     getAuthToken,
     getAuthHeaders,
+    makeAuthenticatedRequest,
   };
 }; 

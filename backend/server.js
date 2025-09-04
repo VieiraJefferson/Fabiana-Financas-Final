@@ -1,72 +1,107 @@
+require('dotenv').config();
 const express = require('express');
-const dotenv = require('dotenv');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
+const helmet = require('helmet');
 const connectDB = require('./config/db.js');
-const userRoutes = require('./routes/userRoutes.js');
-const transactionRoutes = require('./routes/transactionRoutes.js');
-const categoryRoutes = require('./routes/categoryRoutes.js');
-const goalRoutes = require('./routes/goalRoutes.js');
-const budgetRoutes = require('./routes/budgetRoutes.js');
-const adminRoutes = require('./routes/adminRoutes.js');
-const paymentRoutes = require('./routes/paymentRoutes.js');
-const testRoutes = require('./routes/testRoutes.js');
-const { notFound, errorHandler } = require('./middleware/errorMiddleware.js');
-const path = require('path');
-
-dotenv.config();
-
-connectDB();
 
 const app = express();
 
-// CORS configuration for production
-app.use((req, res, next) => {
-  const allowedOrigins = [
+// Configurações de segurança
+app.set('trust proxy', 1); // CRÍTICO para proxies (Vercel/Render/Nginx)
+app.use(helmet({ contentSecurityPolicy: false }));
+
+// CORS robusto
+app.use(cors({
+  origin: [
     'http://localhost:3000',
-    'https://fabiana-financas-proj.vercel.app', // Domínio correto do Vercel
-    'https://*.vercel.app'
-  ];
+    'https://fabiana-financas-proj.vercel.app',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie']
+}));
+
+// Middleware de parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// Health check
+app.get('/health', (_, res) => res.json({ 
+  ok: true, 
+  timestamp: new Date().toISOString(),
+  uptime: process.uptime(),
+  environment: process.env.NODE_ENV || 'development'
+}));
+
+// Conectar ao banco de dados
+connectDB();
+
+// Rotas da API
+app.use('/api', require('./routes/index.js'));
+
+// Middleware de tratamento de erros
+app.use((err, req, res, next) => {
+  console.error('❌ Erro na aplicação:', err);
   
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin) || !origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  // Se for erro de validação do Mongoose
+  if (err.name === 'ValidationError') {
+    const errors = Object.values(err.errors).map(e => e.message);
+    return res.status(400).json({
+      error: 'Erro de validação',
+      details: errors
+    });
   }
   
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+  // Se for erro de JWT
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      error: 'Token inválido'
+    });
   }
+  
+  // Se for erro de expiração de JWT
+  if (err.name === 'TokenExpiredError') {
+    return res.status(401).json({
+      error: 'Token expirado'
+    });
+  }
+  
+  // Erro genérico
+  res.status(err.status || 500).json({
+    error: err.message || 'Erro interno do servidor',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 });
 
-app.use(express.json()); // Para aceitar dados JSON no corpo da requisição
-
-app.get('/', (req, res) => {
-  res.send('API está rodando...');
+// Rota 404 para endpoints não encontrados
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Endpoint não encontrado',
+    path: req.originalUrl,
+    method: req.method,
+    availableEndpoints: '/api'
+  });
 });
 
-// Servir a pasta 'uploads' como estática
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Exportar app para testes
+module.exports = app;
 
-app.use('/api/users', userRoutes);
-app.use('/api/transactions', transactionRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/goals', goalRoutes);
-app.use('/api/budgets', budgetRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/test', testRoutes);
-
-// Middlewares de erro (devem ser os últimos)
-app.use(notFound);
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 5001; // Usaremos uma porta diferente para o backend
-
-app.listen(
-  PORT,
-  console.log(`Servidor rodando no modo ${process.env.NODE_ENV} na porta ${PORT}`)
-); 
+// Iniciar servidor apenas se não estiver em ambiente de teste
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5000;
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    console.log(`📚 API docs: http://localhost:${PORT}/api`);
+    console.log(`🔐 Sistema de autenticação robusto ativo`);
+    console.log(`🍪 Cookies httpOnly configurados`);
+    console.log(`🛡️ CORS e segurança configurados`);
+    console.log(`📊 Trust proxy configurado para produção`);
+  });
+} 

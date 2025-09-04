@@ -1,83 +1,172 @@
-const asyncHandler = require('express-async-handler');
-const { User } = require('../models/userModel.js');
+const jwt = require('jsonwebtoken');
+const { verifyAccessToken } = require('../utils/tokenManager.js');
 
-// Middleware para verificar se o usuário é admin
-const requireAdmin = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
-  
-  if (!user) {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-
-  // Verificar se é admin ou super_admin
-  if (user.role === 'admin' || user.role === 'super_admin' || user.isAdmin) {
-    next();
-  } else {
-    res.status(403);
-    throw new Error('Acesso negado. Permissões de administrador necessárias.');
-  }
-});
-
-// Middleware para verificar se o usuário é super admin
-const requireSuperAdmin = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
-  
-  if (!user) {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-
-  if (user.role === 'super_admin') {
-    next();
-  } else {
-    res.status(403);
-    throw new Error('Acesso negado. Permissões de super administrador necessárias.');
-  }
-});
-
-// Middleware para verificar plano do usuário
-const requirePlan = (requiredPlan) => {
-  return asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.user.id);
+// Middleware de autenticação obrigatória
+function requireAuth(optional = false) {
+  return (req, res, next) => {
+    const token = req.cookies?.access_token;
     
-    if (!user) {
-      res.status(404);
-      throw new Error('Usuário não encontrado');
+    if (!token) {
+      if (optional) return next();
+      return res.status(401).json({ error: 'Não autenticado' });
     }
-
-    // Hierarquia de planos: free < premium < enterprise
-    const planHierarchy = { free: 0, premium: 1, enterprise: 2 };
     
-    if (planHierarchy[user.plan] >= planHierarchy[requiredPlan]) {
+    try {
+      const payload = verifyAccessToken(token);
+      req.user = payload;
       next();
-    } else {
-      res.status(403);
-      throw new Error(`Plano ${requiredPlan} ou superior necessário.`);
+    } catch (e) {
+      if (optional) return next();
+      return res.status(401).json({ error: 'Token inválido/expirado' });
     }
-  });
-};
+  };
+}
 
-// Middleware para verificar limites do plano
-const checkPlanLimits = (resource) => {
-  return asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.user.id);
+// Middleware para verificar role específico
+function requireRole(role) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
     
-    if (!user) {
-      res.status(404);
-      throw new Error('Usuário não encontrado');
+    if (req.user.role !== role) {
+      return res.status(403).json({ error: 'Acesso proibido - role insuficiente' });
     }
-
-    // Aqui você pode implementar a lógica de verificação de limites
-    // baseada no resource (transactions, categories, goals, etc.)
     
     next();
-  });
-};
+  };
+}
 
-module.exports = {
-  requireAdmin,
+// Middleware para verificar múltiplos roles
+function requireAnyRole(roles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+    
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: 'Acesso proibido - role insuficiente',
+        required: roles,
+        current: req.user.role
+      });
+    }
+    
+    next();
+  };
+}
+
+// Middleware para verificar se é admin (role admin ou super_admin)
+function requireAdmin() {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+    
+    const adminRoles = ['admin', 'super_admin'];
+    if (!adminRoles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: 'Acesso proibido - apenas administradores',
+        required: adminRoles,
+        current: req.user.role
+      });
+    }
+    
+    next();
+  };
+}
+
+// Middleware para verificar se é super admin
+function requireSuperAdmin() {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+    
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        error: 'Acesso proibido - apenas super administradores',
+        required: 'super_admin',
+        current: req.user.role
+      });
+    }
+    
+    next();
+  };
+}
+
+// Middleware para verificar se o usuário está ativo
+function requireActiveUser() {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+    
+    if (req.user.isActive === false) {
+      return res.status(403).json({ error: 'Conta desativada' });
+    }
+    
+    next();
+  };
+}
+
+// Middleware para verificar se o usuário pode acessar recursos de outro usuário
+function requireOwnershipOrAdmin(userIdField = 'userId') {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+    
+    const resourceUserId = req.params[userIdField] || req.body[userIdField];
+    
+    // Admin pode acessar qualquer recurso
+    if (['admin', 'super_admin'].includes(req.user.role)) {
+      return next();
+    }
+    
+    // Usuário comum só pode acessar seus próprios recursos
+    if (req.user.id !== resourceUserId) {
+      return res.status(403).json({ 
+        error: 'Acesso proibido - apenas recursos próprios ou admin',
+        resourceOwner: resourceUserId,
+        currentUser: req.user.id
+      });
+    }
+    
+    next();
+  };
+}
+
+// Middleware para logging de acesso
+function logAccess(action) {
+  return (req, res, next) => {
+    const logData = {
+      timestamp: new Date().toISOString(),
+      action,
+      userId: req.user?.id,
+      userRole: req.user?.role,
+      method: req.method,
+      path: req.path,
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent']
+    };
+    
+    console.log('🔐 Access Log:', logData);
+    
+    // Aqui você pode salvar no banco de dados para auditoria
+    // await AccessLog.create(logData);
+    
+    next();
+  };
+}
+
+module.exports = { 
+  requireAuth, 
+  requireRole, 
+  requireAnyRole,
+  requireAdmin, 
   requireSuperAdmin,
-  requirePlan,
-  checkPlanLimits
+  requireActiveUser,
+  requireOwnershipOrAdmin,
+  logAccess
 }; 

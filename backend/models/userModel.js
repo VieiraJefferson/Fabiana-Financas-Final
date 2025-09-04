@@ -65,6 +65,12 @@ const userSchema = mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+    // Controle de sessões ativas
+    activeSessions: {
+      type: Number,
+      default: 0,
+      min: 0
+    }
   },
   {
     timestamps: true, // Cria os campos createdAt e updatedAt automaticamente
@@ -83,6 +89,25 @@ userSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
+
+// Método para incrementar sessões ativas
+userSchema.methods.incrementActiveSessions = function() {
+  this.activeSessions += 1;
+  this.lastLogin = new Date();
+  return this.save();
+};
+
+// Método para decrementar sessões ativas
+userSchema.methods.decrementActiveSessions = function() {
+  this.activeSessions = Math.max(0, this.activeSessions - 1);
+  return this.save();
+};
+
+// Método para limpar todas as sessões
+userSchema.methods.clearAllSessions = function() {
+  this.activeSessions = 0;
+  return this.save();
+};
 
 const User = mongoose.model('User', userSchema);
 

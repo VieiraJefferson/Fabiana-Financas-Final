@@ -1,27 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, authUser, getUserProfile, updateUserProfile, updateUserPassword, updateUserProfilePhoto, googleAuth } = require('../controllers/userController.js');
-const { protect } = require('../middleware/authMiddleware.js');
+const ctrl = require('../controllers/userController.js');
+const { requireAuth } = require('../middleware/adminMiddleware.js');
 const upload = require('../middleware/uploadMiddleware.js');
 
-router.route('/').post(registerUser);
-router.route('/login').post(authUser);
-router.route('/google-auth').post(googleAuth);
+// Rotas públicas
+router.post('/register', ctrl.registerUser);
+router.post('/login', ctrl.authUser);
+router.post('/refresh', ctrl.refreshToken);
+router.post('/logout', ctrl.logout);
 
-// Rotas para o perfil do usuário
-// GET /api/users/profile - Buscar perfil
-// PUT /api/users/profile - Atualizar perfil
-router.route('/profile')
-  .get(protect, getUserProfile)
-  .put(protect, updateUserProfile);
-
-router.route('/password').put(protect, updateUserPassword);
-
-// Nova rota para upload da foto de perfil
-router.route('/profile/photo').post(protect, upload.single('profileImage'), updateUserProfilePhoto);
+// Rotas protegidas
+router.get('/me', requireAuth(), ctrl.getUserProfile);
+router.put('/me', requireAuth(), ctrl.updateUserProfile);
+router.put('/password', requireAuth(), ctrl.updateUserPassword);
+router.post('/profile/photo', requireAuth(), upload.single('profileImage'), ctrl.updateUserProfilePhoto);
+router.post('/logout-all', requireAuth(), ctrl.logoutAll);
+router.get('/sessions', requireAuth(), ctrl.getSessionStats);
 
 // Rota de debug para verificar se a imagem está no banco
-router.route('/debug-image').get(protect, async (req, res) => {
+router.get('/debug-image', requireAuth(), async (req, res) => {
   try {
     const { User } = require('../models/userModel.js');
     const user = await User.findById(req.user.id);

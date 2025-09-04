@@ -24,35 +24,51 @@ export default function LoginPage() {
     setError("");
 
     try {
+      console.log('🔄 Iniciando processo de login...');
+      
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
+      console.log('📡 Resultado do signIn:', result);
+
       if (result?.error) {
+        console.error('❌ Erro no login:', result.error);
         setError("Email ou senha incorretos");
         toast.error("Email ou senha incorretos");
       } else if (result?.ok) {
+        console.log('✅ Login bem-sucedido, obtendo sessão...');
+        
+        // Aguardar um pouco para a sessão ser estabelecida
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Obter a sessão para verificar o tipo de usuário
         const session = await getSession();
+        console.log('🔍 Sessão obtida:', session);
         
         if (session?.user) {
           const isAdmin = session.user.isAdmin || session.user.role === 'admin';
+          console.log('👤 Tipo de usuário:', isAdmin ? 'Admin' : 'User');
           
           toast.success("Login realizado com sucesso!");
           
           // Redirecionar baseado no tipo de usuário
           if (isAdmin) {
+            console.log('🚀 Redirecionando para admin...');
             router.push("/admin");
           } else {
+            console.log('🚀 Redirecionando para dashboard...');
             router.push("/dashboard");
           }
         } else {
+          console.error('❌ Sessão não encontrada após login');
           toast.error("Erro ao obter dados do usuário");
         }
       }
     } catch (err) {
+      console.error('❌ Erro geral no login:', err);
       setError("Erro ao fazer login. Tente novamente.");
       toast.error("Erro ao fazer login. Tente novamente.");
     } finally {
@@ -61,6 +77,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
+    console.log('🔐 Iniciando login com Google...');
     signIn("google", { callbackUrl: "/dashboard" });
   };
 
@@ -138,6 +155,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-12"
+                disabled={loading}
               />
             </div>
 
@@ -151,11 +169,12 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="h-12"
+                disabled={loading}
               />
             </div>
 
             {error && (
-              <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/20 rounded-md">
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {error}
               </div>
             )}
