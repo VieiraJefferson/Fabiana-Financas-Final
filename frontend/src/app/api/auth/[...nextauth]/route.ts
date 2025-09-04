@@ -38,10 +38,13 @@ const handler = NextAuth({
         const u = (data.user || data.admin || data) as any;
         return {
           id: u.id || u._id,
+          _id: u._id || u.id,
           name: u.name,
           email: u.email,
           role: u.role || (u.isAdmin ? "admin" : "user"),
+          isAdmin: u.isAdmin || u.role === "admin",
           accessToken: data.token, // opcional
+          token: data.token || 'dummy-token'
         };
       },
     }),
