@@ -3,6 +3,9 @@ import Credentials from "next-auth/providers/credentials";
 
 const backendBase = process.env.NEXT_PUBLIC_API_URL!; // ex.: https://seu-backend.onrender.com
 
+console.log('🔐 NEXTAUTH_SECRET configurado:', !!process.env.NEXTAUTH_SECRET);
+console.log('🌐 NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+
 const handler = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
@@ -15,6 +18,8 @@ const handler = NextAuth({
         role: { label: "Role", type: "text" }, // "admin" | "user"
       },
       async authorize(credentials) {
+        console.log('🔐 Tentando autorizar:', { email: credentials?.email, role: credentials?.role });
+        
         const role = credentials?.role === "admin" ? "admin" : "user";
         
         // Corrigir a URL para evitar barras duplas
@@ -26,34 +31,43 @@ const handler = NextAuth({
 
         console.log('🔗 URL do backend:', url);
 
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // se seu backend também usa cookie httpOnly, não faz mal incluir:
-          credentials: "include",
-          body: JSON.stringify({
-            email: credentials?.email,
-            password: credentials?.password,
-          }),
-        });
+        try {
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              email: credentials?.email,
+              password: credentials?.password,
+            }),
+          });
 
-        const data = await resp.json().catch(() => ({} as any));
-        if (!resp.ok) {
-          console.error('❌ Erro do backend:', data);
+          console.log('📡 Status da resposta:', resp.status);
+
+          const data = await resp.json().catch(() => ({} as any));
+          
+          if (!resp.ok) {
+            console.error('❌ Erro do backend:', data);
+            return null;
+          }
+
+          console.log('✅ Login bem-sucedido no backend');
+
+          const u = (data.user || data.admin || data) as any;
+          return {
+            id: u.id || u._id,
+            _id: u._id || u.id,
+            name: u.name,
+            email: u.email,
+            role: u.role || (u.isAdmin ? "admin" : "user"),
+            isAdmin: u.isAdmin || u.role === "admin",
+            accessToken: data.token,
+            token: data.token || 'dummy-token'
+          };
+        } catch (error) {
+          console.error('❌ Erro na requisição:', error);
           return null;
         }
-
-        const u = (data.user || data.admin || data) as any;
-        return {
-          id: u.id || u._id,
-          _id: u._id || u.id,
-          name: u.name,
-          email: u.email,
-          role: u.role || (u.isAdmin ? "admin" : "user"),
-          isAdmin: u.isAdmin || u.role === "admin",
-          accessToken: data.token, // opcional
-          token: data.token || 'dummy-token'
-        };
       },
     }),
   ],
