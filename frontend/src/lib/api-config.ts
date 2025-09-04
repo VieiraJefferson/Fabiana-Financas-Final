@@ -39,9 +39,10 @@ export const API_CONFIG = {
   }
 };
 
-// Helper para construir URLs completas
+// Helper para construir URLs completas (corrigido para evitar barras duplas)
 export const buildApiUrl = (endpoint: string) => {
-  return `${API_CONFIG.BASE_URL}${endpoint}`;
+  const baseUrl = API_CONFIG.BASE_URL.endsWith('/') ? API_CONFIG.BASE_URL.slice(0, -1) : API_CONFIG.BASE_URL;
+  return `${baseUrl}${endpoint}`;
 };
 
 // Tipos para as respostas da API

@@ -16,10 +16,15 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         const role = credentials?.role === "admin" ? "admin" : "user";
+        
+        // Corrigir a URL para evitar barras duplas
+        const baseUrl = backendBase.endsWith('/') ? backendBase.slice(0, -1) : backendBase;
         const url =
           role === "admin"
-            ? `${backendBase}/api/admin/login`
-            : `${backendBase}/api/users/login`;
+            ? `${baseUrl}/api/admin/login`
+            : `${baseUrl}/api/users/login`;
+
+        console.log('🔗 URL do backend:', url);
 
         const resp = await fetch(url, {
           method: "POST",
@@ -33,7 +38,10 @@ const handler = NextAuth({
         });
 
         const data = await resp.json().catch(() => ({} as any));
-        if (!resp.ok) return null;
+        if (!resp.ok) {
+          console.error('❌ Erro do backend:', data);
+          return null;
+        }
 
         const u = (data.user || data.admin || data) as any;
         return {
