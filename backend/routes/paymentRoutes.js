@@ -35,9 +35,9 @@ router.post('/cancel-subscription', protect, cancelSubscription);
 // @access  Public
 router.get('/plans', getAvailablePlans);
 
-// @route   GET /api/payments/subscription
+// @route   GET /api/payments/subscription-info
 // @desc    Obter informações da assinatura do usuário
 // @access  Private
-router.get('/subscription', protect, getSubscriptionInfo);
+router.get('/subscription-info', protect, getSubscriptionInfo);
 
 module.exports = router; 
