@@ -57,16 +57,19 @@ app.use(helmet({ contentSecurityPolicy: false }));
 
 // CORS robusto
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://fabiana-financas-frontend.vercel.app',
-    'https://fabiana-financas-proj.vercel.app',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin(origin, cb) {
+    if (!origin) return cb(null, true); // Postman/SSR
+    try {
+      const u = new URL(origin);
+      if (u.hostname.endsWith(".vercel.app") || origin === process.env.FRONTEND_URL) {
+        return cb(null, true);
+      }
+    } catch (_) {}
+    return cb(new Error("CORS not allowed"));
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Set-Cookie']
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"],
 }));
 
 // Middleware de parsing (AGORA SIM, depois do webhook)

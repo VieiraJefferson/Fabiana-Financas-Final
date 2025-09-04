@@ -26,9 +26,13 @@ export default function LoginPage() {
     try {
       console.log('🔄 Iniciando processo de login...');
       
+      // Determinar se é admin baseado no email (temporário)
+      const isAdmin = email.includes('admin') || email === 'admin@admin.com';
+      
       const result = await signIn("credentials", {
         email,
         password,
+        role: isAdmin ? "admin" : "user",
         redirect: false,
       });
 
@@ -49,7 +53,7 @@ export default function LoginPage() {
         console.log('🔍 Sessão obtida:', session);
         
         if (session?.user) {
-          const isAdmin = session.user.isAdmin || session.user.role === 'admin';
+          const isAdmin = session.user.role === 'admin';
           console.log('👤 Tipo de usuário:', isAdmin ? 'Admin' : 'User');
           
           toast.success("Login realizado com sucesso!");

@@ -1,154 +1,74 @@
 import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import axios from "axios";
+import Credentials from "next-auth/providers/credentials";
 
-// URL hardcoded para garantir que funcione em produção
-const backendUrl = "https://fabiana-financas-backend.onrender.com";
-
-const handler = NextAuth({
+export default NextAuth({
+  secret: process.env.NEXTAUTH_SECRET,         // defina isso no Vercel
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   providers: [
-    CredentialsProvider({
-      name: "credentials",
+    Credentials({
+      name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email:    { label: "Email", type: "text" },
+        password: { label: "Senha", type: "password" },
+        role:     { label: "Role",  type: "text" }, // "admin" | "user"
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Credenciais faltando');
-          return null;
-        }
-
         try {
-          console.log('🔐 Tentando login com credenciais...');
-          console.log('📡 URL do backend:', backendUrl);
-          
-          const response = await axios.post(`${backendUrl}/api/users/login`, {
-            email: credentials.email,
-            password: credentials.password,
-          }, {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json',
-            }
+          const role = credentials?.role === "admin" ? "admin" : "user";
+          const base = process.env.NEXT_PUBLIC_API_URL; // ex: https://seu-backend.onrender.com
+          const url  = role === "admin" ? `${base}/api/admin/login` : `${base}/api/users/login`;
+
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // importante p/ cookies httpOnly do backend (se configurados)
+            credentials: "include",
+            body: JSON.stringify({
+              email: credentials?.email,
+              password: credentials?.password,
+            }),
           });
 
-          console.log('✅ Login bem-sucedido no backend');
-          console.log('👤 Dados do usuário:', response.data);
-          
-          if (response.data && response.data._id) {
-            const user = response.data;
-            
-            // Retornar dados do usuário com as propriedades corretas
-            return {
-              id: user._id,
-              _id: user._id,
-              name: user.name,
-              email: user.email,
-              image: user.image,
-              isAdmin: user.isAdmin,
-              role: user.role,
-              token: user.token || 'dummy-token'
-            };
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            // Se o backend devolver { error: "..." }, repassa a mensagem
+            console.error("authorize backend error:", data?.error || resp.statusText);
+            return null; // faz NextAuth retornar 401 CredentialsSignin
           }
 
-          console.log('❌ Usuário não encontrado na resposta');
+          // Backend pode devolver { user: {...} } ou { admin: {...} } ou direto o objeto
+          const u = data.user || data.admin || data || {};
+          return {
+            id:   u.id || u._id,
+            name: u.name,
+            email: u.email,
+            role:  u.role || (u.isAdmin ? "admin" : "user"),
+            accessToken: data.token, // opcional: se você ainda usa bearer no FE
+          };
+        } catch (e: any) {
+          console.error("authorize exception:", e?.message || e);
           return null;
-        } catch (error: any) {
-          console.error('❌ Erro no login:', error.response?.data || error.message);
-          console.error('📡 Status:', error.response?.status);
-          console.error('🔗 URL tentada:', `${backendUrl}/api/users/login`);
-          
-          if (error.response?.status === 401) {
-            throw new Error('Email ou senha inválidos');
-          }
-          
-          throw new Error('Erro interno do servidor');
         }
-      }
+      },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    })
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 dias
-  },
   callbacks: {
-    async jwt({ token, user, account }) {
-      // Se for o primeiro login, incluir dados do usuário
+    async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.isAdmin = user.isAdmin;
-        token.role = user.role;
-        token.image = user.image;
-        token.accessToken = user.token;
+        token.user = { id: user.id, name: user.name, email: user.email, role: user.role };
+        token.accessToken = (user as any).accessToken;
       }
-
       return token;
     },
     async session({ session, token }) {
-      // Incluir dados do usuário na sessão
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.isAdmin = token.isAdmin as boolean;
-        session.user.role = token.role as string;
-        session.user.image = token.image as string;
-        session.accessToken = token.accessToken as string;
-      }
-
+      if (token?.user) session.user = token.user as any;
+      (session as any).accessToken = token.accessToken;
       return session;
     },
-    async signIn({ user, account, profile }) {
-      // Para login com Google, verificar se o usuário existe no backend
-      if (account?.provider === 'google') {
-        try {
-          const response = await axios.post(`${backendUrl}/api/users/google-auth`, {
-            email: user.email,
-            name: user.name,
-            image: user.image,
-          }, {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
-
-          if (response.data && response.data.user) {
-            // Atualizar dados do usuário com informações do backend
-            user.id = response.data.user._id || response.data.user.id;
-            user._id = response.data.user._id || response.data.user.id;
-            user.isAdmin = response.data.user.isAdmin;
-            user.role = response.data.user.role;
-            user.token = response.data.user.token || 'dummy-token';
-            return true;
-          }
-        } catch (error) {
-          console.error('Erro na autenticação Google:', error);
-          return false;
-        }
-      }
-
-      return true;
-    },
-    async redirect({ url, baseUrl }) {
-      // Redirecionar para dashboard após login
-      if (url.startsWith('/')) {
-        return `${baseUrl}${url}`;
-      } else if (new URL(url).origin === baseUrl) {
-        return url;
-      }
-      return baseUrl;
-    }
   },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
-  debug: process.env.NODE_ENV === 'development',
+  pages: { signIn: "/login" },
+  debug: true, // habilita logs úteis no server
 });
 
-export { handler as GET, handler as POST };
+export { default as GET, default as POST };
