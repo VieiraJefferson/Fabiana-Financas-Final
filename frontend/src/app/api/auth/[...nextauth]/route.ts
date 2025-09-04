@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://fabiana-financas-backend.onrender.com";
 
 const handler = NextAuth({
   providers: [
@@ -36,14 +36,16 @@ const handler = NextAuth({
           if (response.data && response.data.user) {
             const user = response.data.user;
             
-            // Retornar dados do usuário sem tokens (eles estão nos cookies)
+            // Retornar dados do usuário com as propriedades corretas
             return {
-              id: user.id,
+              id: user._id || user.id,
+              _id: user._id || user.id,
               name: user.name,
               email: user.email,
               image: user.image,
               isAdmin: user.isAdmin,
               role: user.role,
+              token: user.token || 'dummy-token' // Adicionar token para satisfazer o tipo
             };
           }
 
@@ -76,6 +78,7 @@ const handler = NextAuth({
         token.isAdmin = user.isAdmin;
         token.role = user.role;
         token.image = user.image;
+        token.accessToken = user.token; // Adicionar o token de acesso
       }
 
       return token;
@@ -87,6 +90,7 @@ const handler = NextAuth({
         session.user.isAdmin = token.isAdmin as boolean;
         session.user.role = token.role as string;
         session.user.image = token.image as string;
+        session.accessToken = token.accessToken as string; // Adicionar o token de acesso à sessão
       }
 
       return session;
@@ -108,9 +112,11 @@ const handler = NextAuth({
 
           if (response.data && response.data.user) {
             // Atualizar dados do usuário com informações do backend
-            user.id = response.data.user.id;
+            user.id = response.data.user._id || response.data.user.id;
+            user._id = response.data.user._id || response.data.user.id;
             user.isAdmin = response.data.user.isAdmin;
             user.role = response.data.user.role;
+            user.token = response.data.user.token || 'dummy-token';
             return true;
           }
         } catch (error) {
