@@ -1,3 +1,4 @@
+const asyncHandler = require('express-async-handler');
 const { User, comparePassword } = require('../models/userModel.js');
 const RefreshRepo = require('../repos/refreshRepo.js');
 const { v4: uuid } = require('uuid');

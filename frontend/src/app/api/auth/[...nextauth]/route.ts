@@ -3,7 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://fabiana-financas-backend.onrender.com";
+// URL hardcoded para garantir que funcione em produção
+const backendUrl = "https://fabiana-financas-backend.onrender.com";
 
 const handler = NextAuth({
   providers: [
@@ -15,43 +16,49 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Credenciais faltando');
           return null;
         }
 
         try {
           console.log('🔐 Tentando login com credenciais...');
+          console.log('📡 URL do backend:', backendUrl);
           
           const response = await axios.post(`${backendUrl}/api/users/login`, {
             email: credentials.email,
             password: credentials.password,
           }, {
-            withCredentials: true, // CRÍTICO: enviar cookies
+            withCredentials: true,
             headers: {
               'Content-Type': 'application/json',
             }
           });
 
           console.log('✅ Login bem-sucedido no backend');
+          console.log('👤 Dados do usuário:', response.data);
           
-          if (response.data && response.data.user) {
-            const user = response.data.user;
+          if (response.data && response.data._id) {
+            const user = response.data;
             
             // Retornar dados do usuário com as propriedades corretas
             return {
-              id: user._id || user.id,
-              _id: user._id || user.id,
+              id: user._id,
+              _id: user._id,
               name: user.name,
               email: user.email,
               image: user.image,
               isAdmin: user.isAdmin,
               role: user.role,
-              token: user.token || 'dummy-token' // Adicionar token para satisfazer o tipo
+              token: user.token || 'dummy-token'
             };
           }
 
+          console.log('❌ Usuário não encontrado na resposta');
           return null;
         } catch (error: any) {
           console.error('❌ Erro no login:', error.response?.data || error.message);
+          console.error('📡 Status:', error.response?.status);
+          console.error('🔗 URL tentada:', `${backendUrl}/api/users/login`);
           
           if (error.response?.status === 401) {
             throw new Error('Email ou senha inválidos');
@@ -78,7 +85,7 @@ const handler = NextAuth({
         token.isAdmin = user.isAdmin;
         token.role = user.role;
         token.image = user.image;
-        token.accessToken = user.token; // Adicionar o token de acesso
+        token.accessToken = user.token;
       }
 
       return token;
@@ -90,7 +97,7 @@ const handler = NextAuth({
         session.user.isAdmin = token.isAdmin as boolean;
         session.user.role = token.role as string;
         session.user.image = token.image as string;
-        session.accessToken = token.accessToken as string; // Adicionar o token de acesso à sessão
+        session.accessToken = token.accessToken as string;
       }
 
       return session;

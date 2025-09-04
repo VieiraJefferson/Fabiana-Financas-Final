@@ -15,6 +15,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin: [
     'http://localhost:3000',
+    'https://fabiana-financas-frontend.vercel.app',
     'https://fabiana-financas-proj.vercel.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
