@@ -7,6 +7,50 @@ const connectDB = require('./config/db.js');
 
 const app = express();
 
+// --- [WEBHOOK DO STRIPE - DEVE VIR ANTES DE express.json()] ---
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const isProd = process.env.NODE_ENV === 'production';
+
+// Webhook do Stripe precisa do body RAW (Buffer)
+// ⚠️ Este endpoint DEVE vir ANTES de app.use(express.json())
+app.post(
+  '/api/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error('Stripe webhook signature error:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Trate os eventos que você usa
+    switch (event.type) {
+      case 'checkout.session.completed':
+        // const session = event.data.object;
+        // TODO: marcar pagamento como concluído, liberar recurso, etc.
+        break;
+      case 'payment_intent.succeeded':
+        // const intent = event.data.object;
+        // TODO: lógica de sucesso
+        break;
+      default:
+        // console.log(`Unhandled event type ${event.type}`);
+        break;
+    }
+
+    res.json({ received: true });
+  }
+);
+// --- [FIM DO BLOCO DO WEBHOOK] ---
+
 // Configurações de segurança
 app.set('trust proxy', 1); // CRÍTICO para proxies (Vercel/Render/Nginx)
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -25,7 +69,7 @@ app.use(cors({
   exposedHeaders: ['Set-Cookie']
 }));
 
-// Middleware de parsing
+// Middleware de parsing (AGORA SIM, depois do webhook)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
